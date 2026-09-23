@@ -13,8 +13,11 @@ class Settings(BaseSettings):
     GITHUB_PRIVATE_KEY_PATH: str = ""
     GITHUB_WEBHOOK_SECRET: str = ""
 
-    # CORS configuration - default to open for local development
-    CORS_ORIGINS: list[str] = ["*"]
+    ENTRA_TENANT_ID: str = ""
+    ENTRA_API_CLIENT_ID: str = ""
+    ENTRA_API_SCOPE: str = ""
+
+    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     model_config = SettingsConfigDict(
         env_file=".env",

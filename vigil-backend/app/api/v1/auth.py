@@ -1,10 +1,15 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from app.core.security import get_current_user
 
 router = APIRouter(tags=["Authentication"])
 
 
 @router.get("/me")
-def get_current_user() -> dict[str, str]:
-    """Return the currently authenticated user (Microsoft Entra ID placeholder)."""
-    return {"message": "Endpoint under development", "service": "auth"}
+def get_authenticated_user(current_user: dict = Depends(get_current_user)) -> dict:
+    """Return the safe representation of the authenticated Microsoft Entra user."""
+    return {
+        "authenticated": True,
+        "user": current_user,
+    }
 

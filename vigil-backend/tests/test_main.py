@@ -1,8 +1,11 @@
 import uuid
 from datetime import datetime, timezone
+
+import jwt
 import pytest
 from fastapi.testclient import TestClient
 
+import app.core.security as security
 from app.db.base import Base
 from app.db.session import engine, SessionLocal
 from app.main import app
@@ -31,10 +34,100 @@ def test_health_check():
     assert response.json()["database"] == "connected"
 
 
-def test_auth_me():
+def test_me_requires_auth():
     response = client.get("/api/v1/me")
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Authentication required"}
+
+
+def test_malformed_authorization_header_is_rejected():
+    response = client.get("/api/v1/me", headers={"Authorization": "Token abc123"})
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Authentication required"}
+
+
+def test_invalid_jwt_is_rejected(monkeypatch):
+    def fake_validate(token: str):
+        raise ValueError("invalid token")
+
+    monkeypatch.setattr("app.core.security.validate_access_token", fake_validate)
+    response = client.get("/api/v1/me", headers={"Authorization": "Bearer not-a-real-token"})
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Authentication required"}
+
+
+def test_expired_token_is_rejected(monkeypatch):
+    class DummyKey:
+        algorithm_name = "RS256"
+        key = "secret"
+
+    monkeypatch.setattr(security, "_get_signing_key", lambda token: DummyKey())
+
+    def fake_decode(*args, **kwargs):
+        raise jwt.ExpiredSignatureError("expired")
+
+    monkeypatch.setattr(security.jwt, "decode", fake_decode)
+    with pytest.raises(ValueError, match="Token expired"):
+        security.validate_access_token("expired-token")
+
+
+def test_wrong_issuer_is_rejected(monkeypatch):
+    class DummyKey:
+        algorithm_name = "RS256"
+        key = "secret"
+
+    monkeypatch.setattr(security, "_get_signing_key", lambda token: DummyKey())
+
+    def fake_decode(*args, **kwargs):
+        raise jwt.InvalidTokenError("wrong issuer")
+
+    monkeypatch.setattr(security.jwt, "decode", fake_decode)
+    with pytest.raises(ValueError, match="Invalid token"):
+        security.validate_access_token("issuer-token")
+
+
+def test_wrong_audience_is_rejected(monkeypatch):
+    class DummyKey:
+        algorithm_name = "RS256"
+        key = "secret"
+
+    monkeypatch.setattr(security, "_get_signing_key", lambda token: DummyKey())
+
+    def fake_decode(*args, **kwargs):
+        raise jwt.InvalidAudienceError("wrong audience")
+
+    monkeypatch.setattr(security.jwt, "decode", fake_decode)
+    with pytest.raises(ValueError, match="Invalid token"):
+        security.validate_access_token("audience-token")
+
+
+def test_missing_scope_is_forbidden(monkeypatch):
+    def fake_validate(token: str):
+        raise PermissionError("insufficient permissions")
+
+    monkeypatch.setattr("app.core.security.validate_access_token", fake_validate)
+    response = client.get("/api/v1/me", headers={"Authorization": "Bearer access-token-without-scope"})
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Insufficient permissions"}
+
+
+def test_valid_entra_token_returns_authenticated_user(monkeypatch):
+    def fake_validate(token: str):
+        return {
+            "oid": "user-123",
+            "preferred_username": "user@example.com",
+            "name": "Example User",
+            "tid": "tenant-123",
+            "scp": "access_as_user",
+        }
+
+    monkeypatch.setattr("app.core.security.validate_access_token", fake_validate)
+    response = client.get("/api/v1/me", headers={"Authorization": "Bearer valid-token"})
     assert response.status_code == 200
-    assert response.json()["service"] == "auth"
+    payload = response.json()
+    assert payload["authenticated"] is True
+    assert payload["user"]["oid"] == "user-123"
+    assert payload["user"]["scopes"] == ["access_as_user"]
 
 
 def test_list_repositories():

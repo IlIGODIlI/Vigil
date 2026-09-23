@@ -31,3 +31,26 @@ uvicorn app.main:app --reload
 ```powershell
 pytest
 ```
+
+## Vigil authentication
+
+React
+↓
+Microsoft Entra ID
+↓
+Access token for Vigil API
+↓
+FastAPI
+↓
+JWT validation via Microsoft OIDC metadata/JWKS
+↓
+Issuer + audience + expiry + access_as_user scope checks
+↓
+Protected API
+
+Local environment variables (placeholders only):
+```env
+ENTRA_TENANT_ID=your-tenant-id
+ENTRA_API_CLIENT_ID=your-api-client-id
+ENTRA_API_SCOPE=api://your-api-client-id/access_as_user
+```
