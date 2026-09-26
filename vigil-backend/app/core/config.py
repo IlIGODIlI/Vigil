@@ -12,7 +12,11 @@ class Settings(BaseSettings):
     GITHUB_PRIVATE_KEY: str = ""
     GITHUB_PRIVATE_KEY_PATH: str = ""
     GITHUB_WEBHOOK_SECRET: str = ""
-
+    AI_API_KEY: str = ""
+    AI_BASE_URL: str = ""
+    AI_MODEL: str = "Qwen/Qwen3-8B"
+    AI_TIMEOUT_SECONDS: float = 60.0
+    AI_MAX_RETRIES: int = 3
     # CORS configuration - default to open for local development
     CORS_ORIGINS: list[str] = ["*"]
 

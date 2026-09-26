@@ -1,0 +1,73 @@
+from app.services.ai.context import (
+    ChangedFileContext,
+    CommitContext,
+    ContextNormalizer,
+    ContextSizeLimits,
+    PullRequestContext,
+    RepositoryStructureContext,
+    ReviewContext,
+    ReviewContextBuilder,
+    ScannerFindingContext,
+)
+from app.services.ai.exceptions import (
+    AIAuthenticationError,
+    AIConfigurationError,
+    AIGatewayError,
+    AIProviderError,
+    AIRateLimitError,
+    AIResponseError,
+    AITimeoutError,
+)
+from app.services.ai.gateway import AIModelGateway, ai_gateway
+from app.services.ai.prompts import SYSTEM_PROMPT, ReviewPromptBuilder
+from app.services.ai.providers import BaseAIProvider, MockProvider, OpenAICompatibleProvider
+from app.services.ai.review import (
+    FindingCategory,
+    FindingSeverity,
+    ReviewEngine,
+    ReviewFinding,
+    ReviewResult,
+    ReviewStatus,
+    ReviewValidator,
+    StructuredReviewParser,
+    review_engine,
+)
+from app.services.ai.schemas import AICompletionRequest, AICompletionResponse, AIUsageInfo
+
+__all__ = [
+    "AIModelGateway",
+    "ai_gateway",
+    "AICompletionRequest",
+    "AICompletionResponse",
+    "AIUsageInfo",
+    "AIGatewayError",
+    "AIConfigurationError",
+    "AIAuthenticationError",
+    "AIRateLimitError",
+    "AITimeoutError",
+    "AIProviderError",
+    "AIResponseError",
+    "BaseAIProvider",
+    "OpenAICompatibleProvider",
+    "MockProvider",
+    "PullRequestContext",
+    "CommitContext",
+    "ChangedFileContext",
+    "RepositoryStructureContext",
+    "ScannerFindingContext",
+    "ReviewContext",
+    "ReviewContextBuilder",
+    "ContextNormalizer",
+    "ContextSizeLimits",
+    "SYSTEM_PROMPT",
+    "ReviewPromptBuilder",
+    "FindingCategory",
+    "FindingSeverity",
+    "ReviewStatus",
+    "ReviewFinding",
+    "ReviewResult",
+    "StructuredReviewParser",
+    "ReviewValidator",
+    "ReviewEngine",
+    "review_engine",
+]
