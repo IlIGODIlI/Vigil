@@ -24,12 +24,12 @@ def get_pull_request_review(
 
 @router.post(
     "/reviews/{review_id}/publish",
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+    response_model=ReviewRead,
     summary="Publish review to GitHub",
-    description="Publish review back to GitHub (Not Implemented - Phase 4).",
+    description="Publish verified findings as a GitHub pull request review.",
 )
-def publish_review(review_id: uuid.UUID) -> dict[str, str]:
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="GitHub review publishing is not implemented yet (Phase 4 feature).",
-    )
+async def publish_review(
+    review_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> ReviewRead:
+    return await review_service.publish_review(db=db, review_id=review_id)

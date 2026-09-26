@@ -14,6 +14,7 @@ class ReviewRead(BaseModel):
     summary: Optional[str] = None
     review_body: Optional[str] = None
     github_review_id: Optional[int] = None
+    github_review_url: Optional[str] = None
     published_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime

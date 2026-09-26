@@ -24,12 +24,14 @@ def test_models_metadata():
         "findings",
         "reviews",
         "commit_analyses",
+        # Phase 6: verification audit table
+        "finding_verifications",
     }
     
     assert set(Base.metadata.tables.keys()) == expected_tables, (
         f"Expected tables {expected_tables}, got {set(Base.metadata.tables.keys())}"
     )
-    assert len(Base.metadata.tables) == 9
+    assert len(Base.metadata.tables) == 10
 
 
 def test_pull_request_commits_composite_pk():

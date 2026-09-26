@@ -56,6 +56,10 @@ class Review(Base):
         BigInteger,
         nullable=True,
     )
+    github_review_url: Mapped[Optional[str]] = mapped_column(
+        String(1024),
+        nullable=True,
+    )
     published_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime,
         nullable=True,

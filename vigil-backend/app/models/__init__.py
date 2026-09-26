@@ -11,7 +11,9 @@ from app.models.finding import (
     FindingSeverity,
     FindingSource,
     FindingStatus,
+    FindingVerificationDecision,
 )
+from app.models.finding_verification import FindingVerification
 from app.models.pull_request import PullRequest, PullRequestStatus, pull_request_commits
 from app.models.repository import Repository
 from app.models.review import Review, ReviewStatus
@@ -32,6 +34,8 @@ __all__ = [
     "FindingCategory",
     "FindingSeverity",
     "FindingStatus",
+    "FindingVerificationDecision",
+    "FindingVerification",
     "Review",
     "ReviewStatus",
     "CommitAnalysis",

@@ -12,9 +12,15 @@ class Settings(BaseSettings):
     GITHUB_PRIVATE_KEY: str = ""
     GITHUB_PRIVATE_KEY_PATH: str = ""
     GITHUB_WEBHOOK_SECRET: str = ""
+    GITHUB_API_BASE_URL: str = "https://api.github.com"
 
     # CORS configuration - default to open for local development
     CORS_ORIGINS: list[str] = ["*"]
+
+    # AI Config
+    LLM_PROVIDER: str = "groq"
+    LLM_MODEL: str = "llama3-8b-8192"
+    LLM_API_KEY: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",
