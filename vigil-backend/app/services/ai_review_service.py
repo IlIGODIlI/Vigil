@@ -39,6 +39,28 @@ class AIReviewService:
 
     def __init__(self, review_engine: Optional[ReviewEngine] = None):
         self.review_engine = review_engine or ReviewEngine()
+        self._review_cache: Dict[str, ReviewResult] = {}
+
+    def clear_cache(self) -> None:
+        """Clears the in-memory review response cache."""
+        self._review_cache.clear()
+
+    def compute_context_fingerprint(self, context: ReviewContext) -> str:
+        """Computes a deterministic SHA256 fingerprint for a ReviewContext to support response deduplication."""
+        hasher = hashlib.sha256()
+        hasher.update(f"engine:{id(self.review_engine)}".encode())
+        if context.pull_request:
+            pr = context.pull_request
+            hasher.update(f"pr:{pr.head_sha}:{pr.base_sha}:{pr.title}".encode())
+        if context.changed_files:
+            for f in context.changed_files:
+                hasher.update(f"file:{f.file_path}:{f.diff_patch or ''}".encode())
+        if context.scanner_findings:
+            for sf in context.scanner_findings:
+                hasher.update(f"sf:{sf.file_path}:{sf.start_line}:{sf.rule_id}".encode())
+        if context.custom_instructions:
+            hasher.update(f"ci:{context.custom_instructions}".encode())
+        return hasher.hexdigest()
 
     @staticmethod
     def map_review_finding_to_db_finding(
@@ -287,6 +309,7 @@ class AIReviewService:
         changed_files: Optional[List[ChangedFileContext]] = None,
         scanner_findings: Optional[List[ScannerFindingContext]] = None,
         repository_structure: Optional[RepositoryStructureContext] = None,
+        use_cache: bool = True,
     ) -> AIReviewResponse:
         """Executes the end-to-end AI review pipeline on a pull request and returns an AIReviewResponse."""
         start_time = datetime.now(timezone.utc)
@@ -304,14 +327,23 @@ class AIReviewService:
             repository_structure=repository_structure,
         )
 
-        try:
-            review_result = await self.review_engine.review(context)
-        except Exception as exc:
-            logger.error(
-                f"AI code review failed for pull request {pull_request_id}: "
-                f"{type(exc).__name__} - {str(exc)}"
-            )
-            raise
+        fingerprint = self.compute_context_fingerprint(context)
+        review_result: Optional[ReviewResult] = None
+
+        if use_cache and fingerprint in self._review_cache:
+            logger.info(f"AI code review cache hit for fingerprint {fingerprint[:12]}")
+            review_result = self._review_cache[fingerprint]
+        else:
+            try:
+                review_result = await self.review_engine.review(context)
+                if use_cache:
+                    self._review_cache[fingerprint] = review_result
+            except Exception as exc:
+                logger.error(
+                    f"AI code review failed for pull request {pull_request_id}: "
+                    f"{type(exc).__name__} - {str(exc)}"
+                )
+                raise
 
         elapsed_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000.0
 
