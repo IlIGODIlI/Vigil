@@ -572,7 +572,7 @@ const SecurityTab: React.FC<{
 
 // â”€â”€â”€ Commits Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const CommitsTab: React.FC<{ repoId: string }> = ({ repoId: _repoId }) => (
+const CommitsTab: React.FC<{ repoId: string }> = () => (
   <div className="space-y-5">
     <Card>
       <CardHeader>

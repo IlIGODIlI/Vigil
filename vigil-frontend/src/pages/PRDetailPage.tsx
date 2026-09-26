@@ -16,6 +16,7 @@ import { FindingList } from '../components/findings/FindingList';
 import { CommitRow } from '../components/commit/CommitRow';
 import { ReviewPreview } from '../components/review/ReviewPreview';
 import { PublishModal } from '../components/review/PublishModal';
+import { FilesTab } from '../components/pullRequest/FilesTab';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { EmptyState } from '../components/common/EmptyState';
@@ -24,7 +25,7 @@ import { Badge } from '../components/common/Badge';
 import { Card, CardContent } from '../components/common/Card';
 import { cn } from '../lib/utils';
 
-type TabId = 'findings' | 'commits' | 'review';
+type TabId = 'findings' | 'files' | 'commits' | 'review';
 
 type AnalysisPhase = 'idle' | 'triggering' | 'polling' | 'completed' | 'failed';
 
@@ -211,8 +212,9 @@ export const PRDetailPage: React.FC = () => {
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'findings', label: 'Findings & AI Review', icon: <Shield className="w-3.5 h-3.5" /> },
+    { id: 'files', label: 'Changed Files', icon: <FileText className="w-3.5 h-3.5" /> },
     { id: 'commits', label: 'Commits', icon: <GitCommit className="w-3.5 h-3.5" /> },
-    { id: 'review', label: 'Review Preview', icon: <FileText className="w-3.5 h-3.5" /> },
+    { id: 'review', label: 'Review Actions', icon: <FileText className="w-3.5 h-3.5" /> },
   ];
 
   const isAnalyzing = analysisPhase === 'triggering' || analysisPhase === 'polling';
@@ -419,6 +421,11 @@ export const PRDetailPage: React.FC = () => {
           </div>
         )}
 
+        {/* Files tab */}
+        {activeTab === 'files' && id && (
+          <FilesTab prId={id} />
+        )}
+
         {/* Commits tab */}
         {activeTab === 'commits' && (
           <div className="space-y-2.5">
@@ -474,14 +481,31 @@ export const PRDetailPage: React.FC = () => {
               <>
                 <ReviewPreview review={review} />
                 {review.status !== 'PUBLISHED' && (
-                  <div className="flex items-center justify-end pt-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                    <Button
+                      variant="outline"
+                      size="md"
+                      className="text-slate-300 hover:text-slate-100 hover:bg-slate-800"
+                      onClick={() => setShowPublishModal(true)}
+                    >
+                      Comment
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="md"
+                      className="text-red-400 hover:text-red-300 border-red-900/50 hover:bg-red-950/30 hover:border-red-800"
+                      onClick={() => setShowPublishModal(true)}
+                    >
+                      Request Changes
+                    </Button>
                     <Button
                       variant="primary"
                       size="md"
-                      icon={<Send className="w-4 h-4" />}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white border-none gap-2"
+                      icon={<CheckCircle className="w-4 h-4" />}
                       onClick={() => setShowPublishModal(true)}
                     >
-                      Publish Review to GitHub
+                      Approve & Publish
                     </Button>
                   </div>
                 )}

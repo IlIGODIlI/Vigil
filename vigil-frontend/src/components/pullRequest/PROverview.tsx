@@ -1,9 +1,10 @@
 import React from 'react';
-import { GitBranch, User, GitCommit, Hash, Calendar, Circle } from 'lucide-react';
+import { GitBranch, User, GitCommit, Hash, Calendar, Circle, FileCode, Plus, Minus } from 'lucide-react';
 import type { PullRequestRead } from '../../types';
 import type { ReviewRead } from '../../types';
 import { Badge } from '../common/Badge';
 import { cn } from '../../lib/utils';
+import { getPRDisplayMeta } from '../../data/prDisplayMeta';
 
 interface PROverviewProps {
   pr: PullRequestRead;
@@ -31,6 +32,8 @@ function getPRStatusVariant(status: string): 'success' | 'info' | 'secondary' | 
 }
 
 export const PROverview: React.FC<PROverviewProps> = ({ pr, repositoryName, review }) => {
+  const meta = getPRDisplayMeta(pr.id);
+
   return (
     <div className="space-y-4">
       {/* PR Title */}
@@ -46,6 +49,20 @@ export const PROverview: React.FC<PROverviewProps> = ({ pr, repositoryName, revi
               Review: {review.status}
             </Badge>
           )}
+          <div className="flex items-center gap-2 ml-auto text-xs font-medium">
+            <span className="flex items-center gap-1 text-slate-400">
+              <FileCode className="w-3.5 h-3.5" />
+              {meta.files_changed} files
+            </span>
+            <span className="flex items-center text-emerald-400">
+              <Plus className="w-3.5 h-3.5" />
+              {meta.additions}
+            </span>
+            <span className="flex items-center text-red-400">
+              <Minus className="w-3.5 h-3.5" />
+              {meta.deletions}
+            </span>
+          </div>
         </div>
         <h1 className="text-xl font-bold text-slate-100 leading-snug">{pr.title}</h1>
         {pr.description && (
