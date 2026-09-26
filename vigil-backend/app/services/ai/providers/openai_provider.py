@@ -37,6 +37,7 @@ class OpenAICompatibleProvider(BaseAIProvider):
         self.timeout = timeout if timeout is not None else settings.AI_TIMEOUT_SECONDS
         self.max_retries = max_retries if max_retries is not None else settings.AI_MAX_RETRIES
 
+        self._custom_client = client is not None
         self._client: Optional[AsyncOpenAI] = client
 
     def _get_client(self) -> AsyncOpenAI:
@@ -45,13 +46,22 @@ class OpenAICompatibleProvider(BaseAIProvider):
                 "AI_API_KEY is not configured or is empty. Please set AI_API_KEY in the environment or settings."
             )
 
+        if not self._custom_client:
+            clean_base_url = self.base_url.strip() if self.base_url and self.base_url.strip() else None
+            return AsyncOpenAI(
+                api_key=self.api_key,
+                base_url=clean_base_url,
+                timeout=self.timeout,
+                max_retries=0,
+            )
+
         if self._client is None:
             clean_base_url = self.base_url.strip() if self.base_url and self.base_url.strip() else None
             self._client = AsyncOpenAI(
                 api_key=self.api_key,
                 base_url=clean_base_url,
                 timeout=self.timeout,
-                max_retries=0,  # We manage bounded retries explicitly
+                max_retries=0,
             )
         return self._client
 

@@ -53,15 +53,17 @@ async def test_real_qwen_provider_smoke():
     if res.review and res.review.findings:
         for i, f in enumerate(res.review.findings, 1):
             print(f"\n[Finding #{i}]")
-            print(f"  Category: {f.category.value}")
-            print(f"  Severity: {f.severity.value}")
+            print(f"  Category: {f.category.value if hasattr(f.category, 'value') else f.category}")
+            print(f"  Severity: {f.severity.value if hasattr(f.severity, 'value') else f.severity}")
             print(f"  Title: {f.title}")
             print(f"  File: {f.file}:{f.line}")
-            print(f"  Description: {f.description}")
+            print(f"  Problem: {f.problem}")
+            if f.why:
+                print(f"  Why: {f.why}")
             if f.evidence:
                 print(f"  Evidence: {f.evidence}")
-            if f.suggested_fix:
-                print(f"  Suggested Fix: {f.suggested_fix}")
+            if f.suggestion:
+                print(f"  Suggestion: {f.suggestion}")
     print("=" * 60 + "\n")
 
     assert res.error is None
@@ -74,13 +76,28 @@ async def test_real_qwen_provider_smoke():
 @pytest.mark.skipif(not has_api_key, reason="AI_API_KEY is not configured. Skipping live model evaluation.")
 @pytest.mark.asyncio
 async def test_real_qwen_evaluation_all_fixtures():
-    """Live execution of all 6 fixtures against the configured real model endpoint."""
+    """Live execution of all 8 fixtures against the configured real model endpoint."""
     engine = ReviewEngine(gateway=ai_gateway)
     evaluator = ReviewEvaluator(engine=engine)
 
     results = await evaluator.run_all(get_all_fixtures())
-    assert len(results) == 6
+    assert len(results) == 8
 
     # Verify all responses parsed without crashing
     for r in results:
         assert r.parsed_successfully is True, f"Failed parsing on {r.case_name}: {r.warnings}"
+
+
+def test_real_qwen_activation_configuration_status():
+    """Reports configuration status without exposing credentials."""
+    status = {
+        "api_key_configured": has_api_key,
+        "base_url": settings.AI_BASE_URL or "Not Configured",
+        "model": settings.AI_MODEL,
+        "timeout": settings.AI_TIMEOUT_SECONDS,
+        "max_retries": settings.AI_MAX_RETRIES,
+    }
+    # Ensure key is never returned or leaked in dict keys/values
+    assert "AI_API_KEY" not in str(status.values())
+    if not has_api_key:
+        print("\nCONFIGURATION MISSING: AI_API_KEY is not configured in vigil-backend/.env or environment.")

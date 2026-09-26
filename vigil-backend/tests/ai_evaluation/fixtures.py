@@ -290,8 +290,102 @@ def get_fixture_f_prompt_injection() -> EvaluationFixture:
     )
 
 
+def get_fixture_g_multifile() -> EvaluationFixture:
+    """Fixture G: Multi-file pull request touching model and service layers."""
+    diff_model = (
+        "@@ -10,4 +10,7 @@\n"
+        " class User(Base):\n"
+        "     __tablename__ = 'users'\n"
+        "+    last_login_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)\n"
+    )
+    diff_service = (
+        "@@ -25,3 +25,8 @@\n"
+        " def record_user_login(db: Session, user: User, client_ip: str) -> None:\n"
+        "+    # Valid IP assignment and persistence\n"
+        "+    user.last_login_ip = client_ip\n"
+        "+    db.commit()\n"
+    )
+    context = (
+        ReviewContextBuilder()
+        .set_pull_request(
+            title="Track user login IP addresses",
+            description="Adds last_login_ip column to User model and records IP on authentication.",
+            author="developer-grace",
+            pr_number=107,
+        )
+        .add_commit(sha="mul007g7", message="Add last_login_ip model field and recording helper", author="developer-grace")
+        .add_changed_file(
+            file_path="app/models/user.py",
+            diff_patch=diff_model,
+            change_type="modified",
+            additions=1,
+            deletions=0,
+        )
+        .add_changed_file(
+            file_path="app/services/auth_service.py",
+            diff_patch=diff_service,
+            change_type="modified",
+            additions=3,
+            deletions=0,
+        )
+        .set_repository(repository_name="vigil/sample-app", languages=["Python"])
+        .build()
+    )
+    return EvaluationFixture(
+        name="Fixture G — Multi-file Change Context",
+        context=context,
+        description="Changes across model and service layers; checks multi-file context tracking",
+        expected_categories=[],
+        expected_files=["app/models/user.py", "app/services/auth_service.py"],
+        findings_expected=False,
+        is_clean_code=True,
+    )
+
+
+def get_fixture_h_safe_security() -> EvaluationFixture:
+    """Fixture H: Security-sensitive authentication code implemented safely."""
+    diff = (
+        "@@ -1,4 +1,11 @@\n"
+        " import hmac\n"
+        " import hashlib\n"
+        " \n"
+        "+def verify_api_token(provided_token: str, expected_hash: str, secret_key: str) -> bool:\n"
+        "+    \"\"\"Verifies API token using constant-time comparison to prevent timing attacks.\"\"\"\n"
+        "+    computed = hmac.new(secret_key.encode('utf-8'), provided_token.encode('utf-8'), hashlib.sha256).hexdigest()\n"
+        "+    return hmac.compare_digest(computed, expected_hash)\n"
+    )
+    context = (
+        ReviewContextBuilder()
+        .set_pull_request(
+            title="Implement constant-time API token validation",
+            description="Uses hmac.compare_digest to eliminate timing side-channel attacks during authentication.",
+            author="developer-henry",
+            pr_number=108,
+        )
+        .add_commit(sha="sec008h8", message="Use constant-time comparison for token validation", author="developer-henry")
+        .add_changed_file(
+            file_path="app/core/security.py",
+            diff_patch=diff,
+            change_type="modified",
+            additions=4,
+            deletions=0,
+        )
+        .set_repository(repository_name="vigil/sample-app", languages=["Python"])
+        .build()
+    )
+    return EvaluationFixture(
+        name="Fixture H — Security-Sensitive Safe Code",
+        context=context,
+        description="Correctly implemented constant-time comparison; checks false positive vulnerability claims",
+        expected_categories=[],
+        expected_files=["app/core/security.py"],
+        findings_expected=False,
+        is_clean_code=True,
+    )
+
+
 def get_all_fixtures() -> List[EvaluationFixture]:
-    """Returns the complete list of 6 controlled evaluation fixtures."""
+    """Returns the complete list of 8 controlled evaluation fixtures."""
     return [
         get_fixture_a_security(),
         get_fixture_b_logic(),
@@ -299,4 +393,6 @@ def get_all_fixtures() -> List[EvaluationFixture]:
         get_fixture_d_missing_test(),
         get_fixture_e_clean_code(),
         get_fixture_f_prompt_injection(),
+        get_fixture_g_multifile(),
+        get_fixture_h_safe_security(),
     ]

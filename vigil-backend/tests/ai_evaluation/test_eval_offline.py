@@ -107,6 +107,6 @@ async def test_offline_eval_harness_run_all():
     evaluator = ReviewEvaluator(engine=engine)
 
     results = await evaluator.run_all()
-    assert len(results) == 6
+    assert len(results) == 8
     table = evaluator.format_markdown_table(results)
     assert "| Case | Status |" in table
