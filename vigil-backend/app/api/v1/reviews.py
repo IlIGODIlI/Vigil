@@ -45,6 +45,7 @@ async def create_pull_request_ai_review(
         changed_files=req.changed_files,
         scanner_findings=req.scanner_findings,
         repository_structure=req.repository_structure,
+        review_depth=req.review_depth,
     )
 
 

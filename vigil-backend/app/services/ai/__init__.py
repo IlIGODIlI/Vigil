@@ -23,6 +23,7 @@ from app.services.ai.prompts import SYSTEM_PROMPT, ReviewPromptBuilder
 from app.services.ai.providers import BaseAIProvider, MockProvider, OpenAICompatibleProvider
 from app.services.ai.review import (
     FindingCategory,
+    FindingConfidence,
     FindingSeverity,
     ReviewEngine,
     ReviewFinding,
@@ -32,7 +33,26 @@ from app.services.ai.review import (
     StructuredReviewParser,
     review_engine,
 )
+from app.services.ai.review.coverage import (
+    compute_review_coverage,
+    compute_review_limitations,
+    compute_review_matrix,
+)
 from app.services.ai.schemas import AICompletionRequest, AICompletionResponse, AIUsageInfo
+
+from app.services.ai.deep import (
+    CandidateFinding,
+    DeepInvestigator,
+    DeepReviewLimits,
+    DeepReviewOrchestrator,
+    InvestigationEvidence,
+    ReviewCoverage,
+    ReviewLimitation,
+    ReviewMatrixItem,
+    ReviewPlan,
+    ReviewPlanTarget,
+    ReviewPlanner,
+)
 
 __all__ = [
     "AIModelGateway",
@@ -63,6 +83,7 @@ __all__ = [
     "ReviewPromptBuilder",
     "FindingCategory",
     "FindingSeverity",
+    "FindingConfidence",
     "ReviewStatus",
     "ReviewFinding",
     "ReviewResult",
@@ -70,4 +91,18 @@ __all__ = [
     "ReviewValidator",
     "ReviewEngine",
     "review_engine",
+    "ReviewPlanTarget",
+    "ReviewPlan",
+    "CandidateFinding",
+    "InvestigationEvidence",
+    "ReviewCoverage",
+    "ReviewMatrixItem",
+    "ReviewLimitation",
+    "DeepReviewLimits",
+    "ReviewPlanner",
+    "DeepInvestigator",
+    "DeepReviewOrchestrator",
+    "compute_review_coverage",
+    "compute_review_matrix",
+    "compute_review_limitations",
 ]

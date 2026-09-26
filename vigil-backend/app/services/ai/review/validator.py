@@ -6,6 +6,7 @@ from app.services.ai.context.normalizer import ContextNormalizer
 from app.services.ai.context.schemas import ReviewContext
 from app.services.ai.review.schemas import (
     FindingCategory,
+    FindingConfidence,
     FindingSeverity,
     ReviewFinding,
     ReviewResult,
@@ -21,6 +22,37 @@ class ReviewValidator:
 
     def __init__(self, drop_hallucinated_files: bool = True):
         self.drop_hallucinated_files = drop_hallucinated_files
+
+    def calculate_confidence(
+        self, finding: ReviewFinding, context: Optional[ReviewContext]
+    ) -> FindingConfidence:
+        """Calculates evidence-backed confidence (HIGH, MEDIUM, LOW) based on grounding evidence strength."""
+        if not finding.is_grounded or not context:
+            return FindingConfidence.LOW
+
+        norm_target = ContextNormalizer.normalize_path(finding.file)
+        evidence_exact = False
+        corroborated = False
+
+        if context.changed_files:
+            for cf in context.changed_files:
+                if ContextNormalizer.normalize_path(cf.file_path) == norm_target:
+                    diff = cf.diff_patch or ""
+                    content = cf.file_content or ""
+                    if finding.evidence and (finding.evidence.strip() in diff or finding.evidence.strip() in content):
+                        evidence_exact = True
+
+        if context.scanner_findings:
+            for sf in context.scanner_findings:
+                if ContextNormalizer.normalize_path(sf.file_path) == norm_target and sf.start_line == finding.line:
+                    corroborated = True
+
+        if evidence_exact and (corroborated or (finding.line is not None and finding.line > 0)):
+            return FindingConfidence.HIGH
+        elif evidence_exact or finding.line is not None:
+            return FindingConfidence.MEDIUM
+        else:
+            return FindingConfidence.LOW
 
     def _get_known_files(self, context: Optional[ReviewContext]) -> Set[str]:
         """Extracts normalized paths for all files present in the review context."""
@@ -138,6 +170,10 @@ class ReviewValidator:
 
                 if finding.is_grounded:
                     grounded_count += 1
+                    if not isinstance(item.get("confidence"), str):
+                        finding.confidence = self.calculate_confidence(finding, context)
+                else:
+                    finding.confidence = FindingConfidence.LOW
 
                 validated_findings.append(finding)
 

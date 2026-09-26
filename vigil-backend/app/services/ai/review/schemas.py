@@ -7,9 +7,12 @@ class FindingCategory(str, Enum):
     """Standardized finding categories for AI-generated code reviews."""
 
     SECURITY = "Security"
+    AUTHORIZATION = "Authorization"
     LOGIC = "Logic"
+    RELIABILITY = "Reliability"
     ERROR_HANDLING = "Error Handling"
     TESTING = "Testing"
+    DEPENDENCIES = "Dependencies"
     MAINTAINABILITY = "Maintainability"
     CODE_QUALITY = "Code Quality"
     DOCUMENTATION = "Documentation"
@@ -24,6 +27,14 @@ class FindingSeverity(str, Enum):
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
+
+
+class FindingConfidence(str, Enum):
+    """Standardized evidence confidence ratings for AI review findings."""
+
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
 
 
 class ReviewStatus(str, Enum):
@@ -47,6 +58,10 @@ class ReviewFinding(BaseModel):
     severity: FindingSeverity = Field(
         ...,
         description="Severity level (info, low, medium, high, critical)",
+    )
+    confidence: FindingConfidence = Field(
+        default=FindingConfidence.MEDIUM,
+        description="Evidence-backed confidence rating (LOW, MEDIUM, HIGH)",
     )
     title: str = Field(
         ...,
@@ -108,6 +123,16 @@ class ReviewFinding(BaseModel):
             for sev in FindingSeverity:
                 if sev.value.lower() == cleaned:
                     return sev
+        return v
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def normalize_confidence(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            cleaned = v.strip().upper()
+            for conf in FindingConfidence:
+                if conf.value == cleaned:
+                    return conf
         return v
 
 

@@ -41,6 +41,10 @@ class AIReviewRequest(BaseModel):
         default=None,
         description="Optional repository structure, files, and dependencies context",
     )
+    review_depth: str = Field(
+        default="standard",
+        description="Review execution depth: 'standard' (single pass) or 'deep' (multi-pass Deep Intelligence Engine)",
+    )
 
 
 class AIReviewResponse(BaseModel):
@@ -59,6 +63,10 @@ class AIReviewResponse(BaseModel):
     findings: List[ReviewFinding] = Field(default_factory=list, description="List of validated, grounded findings")
     warnings: List[str] = Field(default_factory=list, description="Parser or validation warnings encountered")
     model: str = Field(..., description="AI model identifier that performed the review")
+    review_depth: str = Field(default="standard", description="Review depth executed ('standard' or 'deep')")
+    coverage: Optional[Dict[str, Any]] = Field(default=None, description="Structured coverage metrics")
+    review_matrix: Optional[List[Dict[str, Any]]] = Field(default=None, description="Structured review matrix per category")
+    limitations: Optional[List[Dict[str, Any]]] = Field(default=None, description="Structured review context limitations")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp of review generation",

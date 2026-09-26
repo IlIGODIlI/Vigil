@@ -310,12 +310,13 @@ class AIReviewService:
         scanner_findings: Optional[List[ScannerFindingContext]] = None,
         repository_structure: Optional[RepositoryStructureContext] = None,
         use_cache: bool = True,
+        review_depth: str = "standard",
     ) -> AIReviewResponse:
         """Executes the end-to-end AI review pipeline on a pull request and returns an AIReviewResponse."""
         start_time = datetime.now(timezone.utc)
         logger.info(
             f"Starting AI code review for pull request {pull_request_id} "
-            f"(analysis_id={analysis_id}, persist={persist})"
+            f"(analysis_id={analysis_id}, persist={persist}, depth={review_depth})"
         )
 
         pr, context = self.build_review_context_for_pull_request(
@@ -327,7 +328,7 @@ class AIReviewService:
             repository_structure=repository_structure,
         )
 
-        fingerprint = self.compute_context_fingerprint(context)
+        fingerprint = self.compute_context_fingerprint(context) + f":depth={review_depth}"
         review_result: Optional[ReviewResult] = None
 
         if use_cache and fingerprint in self._review_cache:
@@ -335,7 +336,13 @@ class AIReviewService:
             review_result = self._review_cache[fingerprint]
         else:
             try:
-                review_result = await self.review_engine.review(context)
+                if review_depth == "deep":
+                    from app.services.ai.deep.orchestrator import DeepReviewOrchestrator
+                    orchestrator = DeepReviewOrchestrator(gateway=self.review_engine.gateway)
+                    review_result = await orchestrator.review(context)
+                else:
+                    review_result = await self.review_engine.review(context)
+
                 if use_cache:
                     self._review_cache[fingerprint] = review_result
             except Exception as exc:
@@ -361,6 +368,20 @@ class AIReviewService:
             "grounded_count", len([f for f in review_result.findings if f.is_grounded])
         )
         dropped_count = meta.get("dropped_hallucinations", 0)
+
+        from app.services.ai.review.coverage import (
+            compute_review_coverage,
+            compute_review_limitations,
+            compute_review_matrix,
+        )
+
+        cov_obj = compute_review_coverage(context, review_result.findings, meta)
+        matrix_objs = compute_review_matrix(context, review_result.findings, review_depth)
+        lim_objs = compute_review_limitations(context, meta)
+
+        coverage_dict = cov_obj.model_dump()
+        matrix_dicts = [m.model_dump() for m in matrix_objs]
+        limitations_dicts = [l.model_dump() for l in lim_objs]
 
         logger.info(
             f"AI code review completed for pull request {pull_request_id} in {elapsed_ms:.1f}ms: "
@@ -389,6 +410,10 @@ class AIReviewService:
             findings=review_result.findings,
             warnings=review_result.warnings,
             model=review_result.model or "unknown",
+            review_depth=review_depth,
+            coverage=coverage_dict,
+            review_matrix=matrix_dicts,
+            limitations=limitations_dicts,
         )
 
 

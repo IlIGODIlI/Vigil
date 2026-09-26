@@ -1,17 +1,19 @@
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ResourceNotFoundException
 from app.models.analysis import Analysis
-from app.schemas.ai_review import AIReviewResponse
 from app.schemas.analysis import AnalysisRead
 from app.services.ai.context.schemas import (
     ChangedFileContext,
     RepositoryStructureContext,
     ScannerFindingContext,
 )
+
+if TYPE_CHECKING:
+    from app.schemas.ai_review import AIReviewResponse
 
 
 class AnalysisService:
@@ -31,12 +33,14 @@ class AnalysisService:
         changed_files: Optional[List[ChangedFileContext]] = None,
         scanner_findings: Optional[List[ScannerFindingContext]] = None,
         repository_structure: Optional[RepositoryStructureContext] = None,
-    ) -> AIReviewResponse:
+        review_depth: str = "standard",
+    ) -> "AIReviewResponse":
         """Integration seam bridging an Analysis execution record to ReviewService.execute_ai_review."""
         analysis = db.scalar(select(Analysis).where(Analysis.id == analysis_id))
         if not analysis:
             raise ResourceNotFoundException(f"Analysis with ID '{analysis_id}' not found")
 
+        from app.schemas.ai_review import AIReviewResponse
         from app.services.review_service import review_service
 
         return await review_service.execute_ai_review(
@@ -48,6 +52,7 @@ class AnalysisService:
             changed_files=changed_files,
             scanner_findings=scanner_findings,
             repository_structure=repository_structure,
+            review_depth=review_depth,
         )
 
 
