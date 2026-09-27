@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,14 @@ from app.models.analysis import Analysis
 from app.models.pull_request import PullRequest
 from app.models.review import Review
 from app.schemas.review import ReviewRead
+from app.services.ai.context.schemas import (
+    ChangedFileContext,
+    RepositoryStructureContext,
+    ScannerFindingContext,
+)
+
+if TYPE_CHECKING:
+    from app.schemas.ai_review import AIReviewResponse
 
 
 class ReviewService:
