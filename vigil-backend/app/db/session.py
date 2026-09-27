@@ -8,17 +8,23 @@ from app.core.config import settings
 
 @compiles(UNIQUEIDENTIFIER, "sqlite")
 def compile_uniqueidentifier_sqlite(type_, compiler, **kw):
-    return "CHAR(36)"
+    return "VARCHAR(36)"
 
 
-db_url = settings.DATABASE_URL.strip() if settings.DATABASE_URL else ""
-if not db_url:
-    db_url = "sqlite:///:memory:"
+db_url = settings.DATABASE_URL or "sqlite:///./vigil.db"
+connect_args = {}
+if db_url.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
 
 engine = create_engine(
     db_url,
-    pool_pre_ping=True if not db_url.startswith("sqlite") else False,
+    connect_args=connect_args,
+    pool_pre_ping=True,
 )
+
+if db_url.startswith("sqlite"):
+    from app.db.base import Base
+    Base.metadata.create_all(bind=engine)
 
 SessionLocal = sessionmaker(
     bind=engine,

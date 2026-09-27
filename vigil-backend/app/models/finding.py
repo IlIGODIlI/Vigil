@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
@@ -11,6 +11,7 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.analysis import Analysis
+    from app.models.finding_verification import FindingVerification
 
 
 class FindingSource(str, Enum):
@@ -41,10 +42,24 @@ class FindingSeverity(str, Enum):
 
 
 class FindingStatus(str, Enum):
+    # Pre-review states (set by AI / ingestion)
     OPEN = "OPEN"
     ACKNOWLEDGED = "ACKNOWLEDGED"
+    # Human review lifecycle (Phase 6)
+    PENDING_REVIEW = "PENDING_REVIEW"
+    VERIFIED = "VERIFIED"
+    REJECTED = "REJECTED"
+    DISMISSED = "DISMISSED"
+    # Legacy resolution states
     FALSE_POSITIVE = "FALSE_POSITIVE"
     RESOLVED = "RESOLVED"
+
+
+class FindingVerificationDecision(str, Enum):
+    """Possible human decisions on a finding (Phase 6)."""
+    VERIFIED = "VERIFIED"
+    REJECTED = "REJECTED"
+    DISMISSED = "DISMISSED"
 
 
 class Finding(Base):
@@ -132,4 +147,9 @@ class Finding(Base):
     analysis: Mapped["Analysis"] = relationship(
         "Analysis",
         back_populates="findings",
+    )
+    verifications: Mapped[List["FindingVerification"]] = relationship(
+        "FindingVerification",
+        back_populates="finding",
+        order_by="FindingVerification.decided_at",
     )

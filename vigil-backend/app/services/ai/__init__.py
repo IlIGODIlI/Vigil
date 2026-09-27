@@ -1,108 +1,15 @@
-from app.services.ai.context import (
-    ChangedFileContext,
-    CommitContext,
-    ContextNormalizer,
-    ContextSizeLimits,
-    PullRequestContext,
-    RepositoryStructureContext,
-    ReviewContext,
-    ReviewContextBuilder,
-    ScannerFindingContext,
-)
-from app.services.ai.exceptions import (
-    AIAuthenticationError,
-    AIConfigurationError,
-    AIGatewayError,
-    AIProviderError,
-    AIRateLimitError,
-    AIResponseError,
-    AITimeoutError,
-)
-from app.services.ai.gateway import AIModelGateway, ai_gateway
-from app.services.ai.prompts import SYSTEM_PROMPT, ReviewPromptBuilder
-from app.services.ai.providers import BaseAIProvider, MockProvider, OpenAICompatibleProvider
-from app.services.ai.review import (
-    FindingCategory,
-    FindingConfidence,
-    FindingSeverity,
-    ReviewEngine,
-    ReviewFinding,
-    ReviewResult,
-    ReviewStatus,
-    ReviewValidator,
-    StructuredReviewParser,
-    review_engine,
-)
-from app.services.ai.review.coverage import (
-    compute_review_coverage,
-    compute_review_limitations,
-    compute_review_matrix,
-)
-from app.services.ai.schemas import AICompletionRequest, AICompletionResponse, AIUsageInfo
-
-from app.services.ai.deep import (
-    CandidateFinding,
-    DeepInvestigator,
-    DeepReviewLimits,
-    DeepReviewOrchestrator,
-    InvestigationEvidence,
-    ReviewCoverage,
-    ReviewLimitation,
-    ReviewMatrixItem,
-    ReviewPlan,
-    ReviewPlanTarget,
-    ReviewPlanner,
-)
+from app.services.ai.service import AIAnalysisService, ai_analysis_service
+from app.services.ai.schema import AIAnalysisResultSchema, AIAnalysisFindingSchema
+from app.services.ai.provider import LLMProvider, GroqProvider, get_llm_provider
+from app.services.ai.prompt import AnalysisPromptBuilder
 
 __all__ = [
-    "AIModelGateway",
-    "ai_gateway",
-    "AICompletionRequest",
-    "AICompletionResponse",
-    "AIUsageInfo",
-    "AIGatewayError",
-    "AIConfigurationError",
-    "AIAuthenticationError",
-    "AIRateLimitError",
-    "AITimeoutError",
-    "AIProviderError",
-    "AIResponseError",
-    "BaseAIProvider",
-    "OpenAICompatibleProvider",
-    "MockProvider",
-    "PullRequestContext",
-    "CommitContext",
-    "ChangedFileContext",
-    "RepositoryStructureContext",
-    "ScannerFindingContext",
-    "ReviewContext",
-    "ReviewContextBuilder",
-    "ContextNormalizer",
-    "ContextSizeLimits",
-    "SYSTEM_PROMPT",
-    "ReviewPromptBuilder",
-    "FindingCategory",
-    "FindingSeverity",
-    "FindingConfidence",
-    "ReviewStatus",
-    "ReviewFinding",
-    "ReviewResult",
-    "StructuredReviewParser",
-    "ReviewValidator",
-    "ReviewEngine",
-    "review_engine",
-    "ReviewPlanTarget",
-    "ReviewPlan",
-    "CandidateFinding",
-    "InvestigationEvidence",
-    "ReviewCoverage",
-    "ReviewMatrixItem",
-    "ReviewLimitation",
-    "DeepReviewLimits",
-    "ReviewPlanner",
-    "DeepInvestigator",
-    "DeepReviewOrchestrator",
-    "compute_review_coverage",
-    "compute_review_matrix",
-    "compute_review_limitations",
+    "AIAnalysisService",
+    "ai_analysis_service",
+    "AIAnalysisResultSchema",
+    "AIAnalysisFindingSchema",
+    "LLMProvider",
+    "GroqProvider",
+    "get_llm_provider",
+    "AnalysisPromptBuilder"
 ]
