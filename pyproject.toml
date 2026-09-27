@@ -1,2 +1,0 @@
-[tool.vercel]
-entrypoint = "vigil-backend.app.main:app"
