@@ -24,8 +24,8 @@ class Settings(BaseSettings):
 
     # Member 3 AI Review specific settings
     AI_API_KEY: str = ""
-    AI_BASE_URL: str = ""
-    AI_MODEL: str = "Qwen/Qwen3-8B"
+    AI_BASE_URL: str = "https://api.groq.com/openai/v1"
+    AI_MODEL: str = "gemma2-9b-it"
     AI_TIMEOUT_SECONDS: float = 60.0
     AI_MAX_RETRIES: int = 3
 

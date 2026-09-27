@@ -21,7 +21,7 @@ def test_provider_configuration_safety():
     }
 
     # Verify key properties exist
-    assert config_metadata["model"] == "Qwen/Qwen3-8B"
+    assert config_metadata["model"] == settings.AI_MODEL
     assert config_metadata["timeout"] == 60.0
     assert config_metadata["max_retries"] == 3
 
