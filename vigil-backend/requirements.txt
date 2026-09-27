@@ -8,4 +8,11 @@ pyodbc
 httpx
 pyjwt
 cryptography
+GitPython
+tree-sitter
+tree-sitter-javascript
+tree-sitter-typescript
+tree-sitter-java
+pytest
+pytest-asyncio
 openai
