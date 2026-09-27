@@ -8,3 +8,4 @@ pyodbc
 httpx
 pyjwt
 cryptography
+openai

@@ -1,5 +1,5 @@
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.services.ai.gateway import AIModelGateway
 from app.services.ai.providers.mock_provider import MockProvider
