@@ -49,21 +49,9 @@ class CommitService:
 
     @staticmethod
     def trigger_commit_analysis(db: Session, sha: str) -> CommitAnalysisRead:
-        commits = list(db.scalars(select(Commit).where(Commit.sha == sha)).all())
-        if not commits:
-            raise ResourceNotFoundException(f"Commit with SHA '{sha}' not found")
-        selected_commit = sorted(commits, key=lambda c: c.created_at, reverse=True)[0]
+        from app.services.commit_analysis.service import commit_analysis_engine_service
+        return commit_analysis_engine_service.trigger_commit_analysis_sync(db=db, sha=sha)
 
-        commit_analysis = CommitAnalysis(
-            commit_id=selected_commit.id,
-            status=CommitAnalysisStatus.QUEUED.value,
-            overall_status=CommitAnalysisOverallStatus.INSUFFICIENT_EVIDENCE.value,
-        )
-        db.add(commit_analysis)
-        db.commit()
-        db.refresh(commit_analysis)
-
-        return CommitAnalysisRead.model_validate(commit_analysis)
 
     @classmethod
     def sync_commit_payload(

@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "llama3-8b-8192"
     LLM_API_KEY: str = ""
 
+    # Member 3 AI Review specific settings
+    AI_API_KEY: str = ""
+    AI_BASE_URL: str = ""
+    AI_MODEL: str = "Qwen/Qwen3-8B"
+    AI_TIMEOUT_SECONDS: float = 60.0
+    AI_MAX_RETRIES: int = 3
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
