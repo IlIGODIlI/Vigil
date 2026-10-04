@@ -20,7 +20,16 @@ from app.services.ai.schemas import AICompletionRequest, AICompletionResponse, A
 
 
 class OpenAICompatibleProvider(BaseAIProvider):
-    """Asynchronous provider for OpenAI-compatible model endpoints (e.g. OpenAI, vLLM, Hugging Face, Qwen)."""
+    """Asynchronous provider for OpenAI-compatible model endpoints.
+
+    Supports Google Gemini (via https://generativelanguage.googleapis.com/v1beta/openai/),
+    OpenAI, vLLM, Hugging Face Inference Endpoints, and any other provider that implements
+    the OpenAI Chat Completions wire protocol.
+
+    Note on Gemini 3.x: The ``temperature`` parameter is accepted in the request payload
+    but silently ignored by Gemini 3.x models (which use fixed internal sampling).
+    It remains in the schema for forward-compatibility with other providers.
+    """
 
     def __init__(
         self,
@@ -81,8 +90,10 @@ class OpenAICompatibleProvider(BaseAIProvider):
             "model": model_name,
             "messages": messages,
         }
-        if request.temperature is not None:
-            payload["temperature"] = request.temperature
+        # NOTE: temperature is intentionally omitted. Gemini 3.x models do not
+        # support custom sampling parameters (temperature, top_p, top_k) via the
+        # OpenAI-compatible endpoint and will reject requests that include them.
+        # max_tokens is retained — Gemini accepts it (maps to maxOutputTokens).
         if request.max_tokens is not None:
             payload["max_tokens"] = request.max_tokens
 

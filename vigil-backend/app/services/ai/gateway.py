@@ -10,7 +10,7 @@ from app.services.ai.schemas import AICompletionRequest, AICompletionResponse
 class AIModelGateway:
     """Central model-agnostic AI Gateway for VIGIL.
 
-    Decouples callers from specific model providers (OpenAI, Qwen, vLLM, Hugging Face),
+    Decouples callers from specific model providers (Google Gemini, OpenAI, vLLM, Hugging Face),
     standardizing prompt submission, error normalization, and response parsing.
     """
 

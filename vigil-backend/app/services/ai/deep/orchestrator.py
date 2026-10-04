@@ -1,5 +1,6 @@
 from typing import List, Optional, Tuple
 
+from app.core.config import settings
 from app.core.logging_config import logger
 from app.services.ai.context.schemas import ReviewContext
 from app.services.ai.deep.investigator import DeepInvestigator
@@ -214,7 +215,7 @@ class DeepReviewOrchestrator:
         return ReviewResult(
             summary=summary,
             findings=final_findings,
-            model="Qwen/Qwen3-8B",
+            model=settings.AI_MODEL,
             status=ReviewStatus.SUCCESS if not warnings or final_findings else ReviewStatus.WARNING,
             warnings=warnings,
             validation_metadata=meta,
