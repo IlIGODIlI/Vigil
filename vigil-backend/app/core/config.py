@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     GITHUB_PRIVATE_KEY: str = ""
     GITHUB_PRIVATE_KEY_PATH: str = ""
     GITHUB_WEBHOOK_SECRET: str = ""
+    GITHUB_INSTALLATION_ID: int = 0
     GITHUB_API_BASE_URL: str = "https://api.github.com"
 
     # CORS configuration - default to open for local development

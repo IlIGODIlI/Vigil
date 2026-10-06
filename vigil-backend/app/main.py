@@ -10,6 +10,7 @@ from app.api.v1.finding_verification import router as finding_verification_route
 from app.api.v1.findings import router as findings_router
 from app.api.v1.findings_queue import router as findings_queue_router
 from app.api.v1.github import router as github_router
+from app.api.v1.github_status import router as github_status_router
 from app.api.v1.health import router as health_router
 from app.api.v1.pull_requests import router as pull_requests_router
 from app.api.v1.repositories import router as repositories_router
@@ -80,6 +81,7 @@ app.include_router(findings_router, prefix=api_v1_prefix)
 app.include_router(finding_verification_router, prefix=api_v1_prefix)
 app.include_router(review_queue_router, prefix=api_v1_prefix)
 app.include_router(github_router, prefix=api_v1_prefix)
+app.include_router(github_status_router, prefix=api_v1_prefix)
 app.include_router(sync_router, prefix=api_v1_prefix)
 app.include_router(context_router, prefix=api_v1_prefix)
 app.include_router(health_router, prefix=api_v1_prefix)

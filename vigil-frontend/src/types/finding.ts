@@ -72,3 +72,65 @@ export interface FindingRead {
 }
 
 export type FindingListResponse = PaginatedResponse<FindingRead>;
+
+export interface FindingVerificationRead {
+  id: string;
+  finding_id: string;
+  reviewer_login: string;
+  decision: 'VERIFIED' | 'REJECTED' | 'DISMISSED' | string;
+  comment?: string | null;
+  created_at: string;
+}
+
+export interface FindingVerificationList {
+  items: FindingVerificationRead[];
+  total: number;
+}
+
+export interface FindingDetail extends FindingRead {
+  verification_history?: FindingVerificationRead[];
+  analysis?: {
+    id: string;
+    head_sha: string;
+    status: string;
+    trigger_type: string;
+    created_at: string;
+  };
+  pull_request?: {
+    id: string;
+    pr_number: number;
+    title: string;
+    head_sha: string;
+    source_branch: string;
+    target_branch: string;
+    status: string;
+  };
+  repository?: {
+    id: string;
+    full_name: string;
+    owner_login: string;
+    name: string;
+    html_url: string;
+  };
+}
+
+export interface FindingQueueItem {
+  finding_id: string;
+  analysis_id: string;
+  repository_full_name?: string | null;
+  repository_id?: string | null;
+  pull_request_id?: string | null;
+  pull_request_number?: number | null;
+  commit_sha?: string | null;
+  file_path?: string | null;
+  start_line?: number | null;
+  end_line?: number | null;
+  severity: FindingSeverity | string;
+  category: FindingCategory;
+  source: FindingSource;
+  title: string;
+  status: FindingStatus;
+  created_at: string;
+}
+
+export type FindingQueueListResponse = PaginatedResponse<FindingQueueItem>;
