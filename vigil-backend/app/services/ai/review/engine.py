@@ -94,6 +94,33 @@ class ReviewEngine:
             raw_response=completion_response.content,
         )
 
+        # 6. Run deterministic static complexity analyzer to supplement LLM findings
+        from app.services.ai.complexity import complexity_analyzer
+        from app.services.ai.edge_cases import edge_case_analyzer
+        from app.services.ai.security_assumptions import security_assumption_analyzer
+
+        static_complexity_findings = complexity_analyzer.scan_context(context)
+        for cf in static_complexity_findings:
+            if not any(f.file == cf.file and f.line == cf.line and f.category == FindingCategory.COMPLEXITY for f in result.findings):
+                result.findings.append(cf)
+
+        # 7. Run deterministic static edge-case analyzer to supplement LLM findings
+        static_edge_case_findings = edge_case_analyzer.scan_context(context)
+        for ef in static_edge_case_findings:
+            if not any(f.file == ef.file and f.line == ef.line and (f.category == FindingCategory.EDGE_CASE or f.title == ef.title) for f in result.findings):
+                result.findings.append(ef)
+
+        # 8. Run deterministic static security assumption analyzer to supplement LLM findings
+        static_assumption_findings = security_assumption_analyzer.scan_context(context)
+        for af in static_assumption_findings:
+            if not any(
+                f.file == af.file
+                and (f.line == af.line or not f.line)
+                and (f.category == FindingCategory.SECURITY_ASSUMPTION or f.title == af.title)
+                for f in result.findings
+            ):
+                result.findings.append(af)
+
         if injection_findings:
             result.findings = injection_findings + result.findings
 

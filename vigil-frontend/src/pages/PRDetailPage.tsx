@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ChevronLeft, Cpu, Shield, GitCommit, FileText, Send,
-  RotateCcw, CheckCircle, AlertTriangle, Loader2, Clock, ShieldAlert
+  RotateCcw, CheckCircle, AlertTriangle, Loader2, Clock, ShieldAlert, Zap
 } from 'lucide-react';
 import { pullRequestService } from '../services/pullRequestService';
 import { repositoryService } from '../services/repositoryService';
@@ -429,6 +429,24 @@ if (finalStatus === 'COMPLETED') {
                 </div>
                 <span className="shrink-0 text-[10px] font-mono px-2 py-1 rounded bg-red-900/50 text-red-300 border border-red-700/50 uppercase tracking-wider">
                   SECURITY DETECTOR
+                </span>
+              </div>
+            )}
+
+            {/* Complexity Optimization Alert Banner */}
+            {!findingsLoading && findings.some(f => f.category.toUpperCase() === 'COMPLEXITY') && (
+              <div className="flex items-start gap-3 p-4 bg-amber-950/40 border border-amber-700/60 rounded-xl">
+                <Zap className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-amber-300 mb-1">
+                    ⚡ Code Complexity &amp; Performance Optimization Opportunity
+                  </p>
+                  <p className="text-xs text-amber-300/80 leading-relaxed">
+                    VIGIL identified unnecessary time/space complexity introduced in this PR. Review the proposed O(n) algorithmic optimizations below to improve execution efficiency.
+                  </p>
+                </div>
+                <span className="shrink-0 text-[10px] font-mono px-2 py-1 rounded bg-amber-900/50 text-amber-300 border border-amber-700/50 uppercase tracking-wider">
+                  COMPLEXITY ENGINE
                 </span>
               </div>
             )}

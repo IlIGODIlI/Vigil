@@ -36,7 +36,7 @@ Review the plan targets and code changes above. You MUST return a structured JSO
   "summary": "<Broad review summary assessment>",
   "candidates": [
     {
-      "category": "Security" | "Logic" | "Error Handling" | "Testing" | "Maintainability" | "Code Quality" | "Documentation" | "Performance",
+      "category": "Security" | "Logic" | "Error Handling" | "Testing" | "Maintainability" | "Code Quality" | "Documentation" | "Performance" | "Complexity",
       "severity_estimate": "info" | "low" | "medium" | "high" | "critical",
       "title": "<Candidate finding headline hypothesis>",
       "file": "<relative file path from diff>",
@@ -206,6 +206,35 @@ class DeepReviewOrchestrator:
             else:
                 dropped_count += 1
                 warnings.append(f"Candidate '{candidate.title}' on '{candidate.file}' dropped: {inv_summary}")
+
+        # Supplement deep review with static complexity analysis findings
+        from app.services.ai.complexity import complexity_analyzer
+
+        static_complexity_findings = complexity_analyzer.scan_context(context)
+        for cf in static_complexity_findings:
+            if not any(f.file == cf.file and f.line == cf.line and f.category == FindingCategory.COMPLEXITY for f in final_findings):
+                final_findings.append(cf)
+
+        # Supplement deep review with static edge-case analysis findings
+        from app.services.ai.edge_cases import edge_case_analyzer
+
+        static_edge_case_findings = edge_case_analyzer.scan_context(context)
+        for ef in static_edge_case_findings:
+            if not any(f.file == ef.file and f.line == ef.line and (f.category == FindingCategory.EDGE_CASE or f.title == ef.title) for f in final_findings):
+                final_findings.append(ef)
+
+        # Supplement deep review with static security assumption analysis findings
+        from app.services.ai.security_assumptions import security_assumption_analyzer
+
+        static_assumption_findings = security_assumption_analyzer.scan_context(context)
+        for af in static_assumption_findings:
+            if not any(
+                f.file == af.file
+                and (f.line == af.line or not f.line)
+                and (f.category == FindingCategory.SECURITY_ASSUMPTION or f.title == af.title)
+                for f in final_findings
+            ):
+                final_findings.append(af)
 
         # Compute coverage metrics
         examined_files = [f.file_path for f in context.changed_files]

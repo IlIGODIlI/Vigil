@@ -13,6 +13,9 @@ export type FindingSource =
 export type FindingCategory =
   | 'SECURITY'
   | 'PROMPT_INJECTION'
+  | 'COMPLEXITY'
+  | 'EDGE_CASE'
+  | 'SECURITY_ASSUMPTION'
   | 'LOGIC'
   | 'ERROR_HANDLING'
   | 'TESTING'
@@ -32,6 +35,21 @@ export interface FindingEvidence {
   suggestion?: string;
   code_snippet?: string;
   description?: string;
+  current_time_complexity?: string;
+  suggested_time_complexity?: string;
+  current_space_complexity?: string;
+  suggested_space_complexity?: string;
+  edge_case_type?: string;
+  scenario?: string;
+  expected_behavior?: string;
+  current_behavior?: string;
+  potential_impact?: string;
+  assumption_name?: string;
+  scope?: string;
+  previous_assumption?: string;
+  new_assumption?: string;
+  change_type?: string;
+  potential_repercussions?: string;
   [key: string]: unknown;
 }
 
