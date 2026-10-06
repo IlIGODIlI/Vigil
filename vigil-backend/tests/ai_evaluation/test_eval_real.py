@@ -20,6 +20,8 @@ def test_provider_configuration_safety():
         "max_retries": settings.AI_MAX_RETRIES,
     }
 
+    # Verify key properties exist and are properly configured
+    assert config_metadata["model"], "AI_MODEL must be set in settings"
     # Verify key properties exist
     assert config_metadata["model"] == settings.AI_MODEL
     assert config_metadata["timeout"] == 60.0
@@ -34,7 +36,7 @@ def test_provider_configuration_safety():
 @pytest.mark.real_ai
 @pytest.mark.skipif(not has_api_key, reason="AI_API_KEY is not configured. Skipping live model evaluation.")
 @pytest.mark.asyncio
-async def test_real_qwen_provider_smoke():
+async def test_real_gemini_provider_smoke():
     """Live smoke test sending Fixture A (SQL injection) to the configured real model endpoint."""
     engine = ReviewEngine(gateway=ai_gateway)
     evaluator = ReviewEvaluator(engine=engine)
@@ -43,7 +45,7 @@ async def test_real_qwen_provider_smoke():
     res = await evaluator.evaluate_fixture(fixture)
 
     print("\n" + "=" * 60)
-    print("LIVE QWEN SMOKE TEST EVALUATION RESULT:")
+    print("LIVE GEMINI SMOKE TEST EVALUATION RESULT:")
     print(f"Model: {res.model}")
     print(f"Elapsed Time: {res.elapsed_time}s")
     print(f"Parsed Successfully: {res.parsed_successfully}")
@@ -75,7 +77,7 @@ async def test_real_qwen_provider_smoke():
 @pytest.mark.real_ai
 @pytest.mark.skipif(not has_api_key, reason="AI_API_KEY is not configured. Skipping live model evaluation.")
 @pytest.mark.asyncio
-async def test_real_qwen_evaluation_all_fixtures():
+async def test_real_gemini_evaluation_all_fixtures():
     """Live execution of all 8 fixtures against the configured real model endpoint."""
     engine = ReviewEngine(gateway=ai_gateway)
     evaluator = ReviewEvaluator(engine=engine)
@@ -88,7 +90,7 @@ async def test_real_qwen_evaluation_all_fixtures():
         assert r.parsed_successfully is True, f"Failed parsing on {r.case_name}: {r.warnings}"
 
 
-def test_real_qwen_activation_configuration_status():
+def test_real_gemini_activation_configuration_status():
     """Reports configuration status without exposing credentials."""
     status = {
         "api_key_configured": has_api_key,

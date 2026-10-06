@@ -211,7 +211,7 @@ async def test_authentication_error_is_not_retried():
 async def test_model_configured_through_settings():
     provider = OpenAICompatibleProvider(api_key="test-key")
     assert provider.default_model == settings.AI_MODEL
-    assert provider.default_model == "Qwen/Qwen3-8B"
+    assert settings.AI_MODEL, "AI_MODEL must be configured in settings (check .env or config defaults)"
 
     # Per-request model override works
     mock_provider = MockProvider()
