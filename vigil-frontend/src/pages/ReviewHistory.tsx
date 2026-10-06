@@ -1,175 +1,336 @@
-import { useState } from 'react';
-import { CheckCircle, XCircle, Clock, ArrowUpRight, User, ShieldAlert } from 'lucide-react';
-import { OrbXS } from '../components/AIOrb';
-import PageHeader from '../components/PageHeader';
+import { useMemo, useState } from "react"
+import {
+  ArrowUpRight,
+  CheckCircle,
+  ChevronDown,
+  Clock,
+  Search,
+  ShieldAlert,
+  User,
+  XCircle,
+} from "lucide-react"
+import { OrbXS } from "../components/AIOrb"
+import PageHeader from "../components/PageHeader"
 
 const reviews = [
   {
-    id: 'R-028', pr: 39, title: 'chore: update CI pipeline config', repo: 'infrastructure',
-    reviewer: 'Dev Kapoor', decision: 'approved', findings: 0,
-    date: 'Sep 24, 2026', time: '14:32', duration: '12 min',
-    aiStatus: 'complete', humanNote: 'CI config changes look safe. No security-relevant modifications.',
+    id: "R-028",
+    pr: 39,
+    title: "chore: update CI pipeline config",
+    repo: "infrastructure",
+    reviewer: "Dev Kapoor",
+    decision: "approved",
+    findings: 0,
+    date: "Sep 24, 2026",
+    time: "14:32",
+    duration: "12 min",
+    aiStatus: "complete",
+    humanNote:
+      "No security findings required follow-up in the reviewed configuration changes.",
   },
   {
-    id: 'R-027', pr: 35, title: 'feat: add OAuth2 provider support', repo: 'auth-service',
-    reviewer: 'Priya Sharma', decision: 'changes_requested', findings: 2,
-    date: 'Sep 23, 2026', time: '16:45', duration: '28 min',
-    aiStatus: 'complete', humanNote: 'OAuth state parameter not validated. Potential CSRF in auth flow. Must fix before merge.',
+    id: "R-027",
+    pr: 35,
+    title: "feat: add OAuth2 provider support",
+    repo: "auth-service",
+    reviewer: "Priya Sharma",
+    decision: "changes_requested",
+    findings: 2,
+    date: "Sep 23, 2026",
+    time: "16:45",
+    duration: "28 min",
+    aiStatus: "complete",
+    humanNote:
+      "OAuth state validation requires changes before the pull request can proceed.",
   },
   {
-    id: 'R-026', pr: 31, title: 'fix: resolve memory leak in cache', repo: 'api-gateway',
-    reviewer: 'Rohan Mehta', decision: 'approved', findings: 0,
-    date: 'Sep 22, 2026', time: '10:18', duration: '8 min',
-    aiStatus: 'complete', humanNote: 'Memory management fix. AI confirmed no security implications.',
+    id: "R-026",
+    pr: 31,
+    title: "fix: resolve memory leak in cache",
+    repo: "api-gateway",
+    reviewer: "Rohan Mehta",
+    decision: "approved",
+    findings: 0,
+    date: "Sep 22, 2026",
+    time: "10:18",
+    duration: "8 min",
+    aiStatus: "complete",
+    humanNote:
+      "The reviewer found no security findings requiring changes in the analyzed diff.",
   },
   {
-    id: 'R-025', pr: 28, title: 'feat: add export to CSV endpoint', repo: 'data-pipeline',
-    reviewer: 'Anita Bose', decision: 'escalated', findings: 1,
-    date: 'Sep 21, 2026', time: '11:54', duration: '19 min',
-    aiStatus: 'complete', humanNote: 'Possible CSV injection — escalated to senior review.',
+    id: "R-025",
+    pr: 28,
+    title: "feat: add export to CSV endpoint",
+    repo: "data-pipeline",
+    reviewer: "Anita Bose",
+    decision: "escalated",
+    findings: 1,
+    date: "Sep 21, 2026",
+    time: "11:54",
+    duration: "19 min",
+    aiStatus: "complete",
+    humanNote:
+      "A potential CSV injection finding was sent for additional human review.",
   },
   {
-    id: 'R-024', pr: 25, title: 'deps: upgrade SQLAlchemy to 2.0', repo: 'auth-service',
-    reviewer: 'Dev Kapoor', decision: 'approved', findings: 0,
-    date: 'Sep 20, 2026', time: '09:10', duration: '15 min',
-    aiStatus: 'complete', humanNote: 'Dependency upgrade verified against changelog. No breaking security changes.',
+    id: "R-024",
+    pr: 25,
+    title: "deps: upgrade SQLAlchemy to 2.0",
+    repo: "auth-service",
+    reviewer: "Dev Kapoor",
+    decision: "approved",
+    findings: 0,
+    date: "Sep 20, 2026",
+    time: "09:10",
+    duration: "15 min",
+    aiStatus: "complete",
+    humanNote:
+      "The reviewer approved after checking the dependency change and analysis results.",
   },
-];
+]
 
-const decisionConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  approved: { label: 'Approved', icon: CheckCircle, color: 'var(--accent)' },
-  changes_requested: { label: 'Changes Requested', icon: XCircle, color: 'var(--severity-medium)' },
-  escalated: { label: 'Escalated', icon: ArrowUpRight, color: 'var(--severity-critical)' },
-  pending: { label: 'Pending', icon: Clock, color: 'var(--primary)' },
-};
+type Decision = "approved" | "changes_requested" | "escalated"
+type DecisionFilter = "all" | Decision
+
+const decisionConfig: Record<Decision, {
+  label: string
+  icon: React.ElementType
+  className: string
+}> = {
+  approved: { label: "Approved", icon: CheckCircle, className: "is-approved" },
+  changes_requested: {
+    label: "Changes Requested",
+    icon: XCircle,
+    className: "is-changes-requested",
+  },
+  escalated: {
+    label: "Escalated",
+    icon: ArrowUpRight,
+    className: "is-escalated",
+  },
+}
+
+function durationMinutes(duration: string) {
+  return Number.parseInt(duration, 10) || 0
+}
 
 export default function ReviewHistory() {
-  const [filter, setFilter] = useState<'all' | 'approved' | 'changes_requested' | 'escalated'>('all');
-  const visibleReviews = reviews.filter(review => filter === 'all' || review.decision === filter);
+  const [filter, setFilter] = useState<DecisionFilter>("all")
+  const [query, setQuery] = useState("")
+  const [repository, setRepository] = useState("all")
+
+  const repositories = useMemo(
+    () => Array.from(new Set(reviews.map((review) => review.repo))).sort(),
+    [],
+  )
+  const totalFindings = reviews.reduce(
+    (total, review) => total + review.findings,
+    0,
+  )
+  const averageReviewTime = reviews.length
+    ? reviews.reduce(
+        (total, review) => total + durationMinutes(review.duration),
+        0,
+      ) / reviews.length
+    : 0
+
+  const visibleReviews = reviews.filter((review) => {
+    const normalizedQuery = query.trim().toLowerCase()
+    const matchesDecision = filter === "all" || review.decision === filter
+    const matchesRepository = repository === "all" || review.repo === repository
+    const matchesQuery =
+      !normalizedQuery ||
+      [review.id, review.title, review.repo, review.reviewer, `PR ${review.pr}`]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery)
+    return matchesDecision && matchesRepository && matchesQuery
+  })
+
+  const summary = [
+    {
+      value: reviews.length,
+      label: "Total Reviews",
+      note: "Pull-request security reviews",
+    },
+    {
+      value: totalFindings,
+      label: "Findings Reviewed",
+      note: "Across completed reviews",
+    },
+    {
+      value: `${averageReviewTime.toFixed(1)}m`,
+      label: "Average Review Time",
+      note: "From review start to decision",
+    },
+    {
+      value: repositories.length,
+      label: "Repositories Reviewed",
+      note: "In this review history",
+    },
+  ]
 
   return (
-    <div className="stage3-page" style={{ padding: '32px 36px', maxWidth: '1000px' }}>
+    <div className="stage3-page">
       <PageHeader
         title="Review History"
         subtitle="Complete audit trail of security reviews"
       />
 
-      {/* Summary stats */}
-      <div className="stage3-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
-        {[
-          ['28', 'Total Reviews', 'This month'],
-          ['4.2h', 'Avg. Resolution', 'Time to decision'],
-          ['87%', 'Approval Rate', 'Last 30 days'],
-          ['3', 'Escalated', 'Sent to senior'],
-        ].map(([val, label, sub]) => (
-          <div key={label} style={{
-            background: 'var(--card)', border: '1px solid var(--border)',
-            borderRadius: '8px', padding: '16px',
-          }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '22px', fontWeight: '600', color: 'var(--foreground)', marginBottom: '4px' }}>{val}</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: '500', color: 'var(--foreground)', marginBottom: '2px' }}>{label}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{sub}</div>
+      <div className="stage3-stat-grid review-history-summary">
+        {summary.map((item) => (
+          <div key={item.label}>
+            <strong>{item.value}</strong>
+            <span>{item.label}</span>
+            <small>{item.note}</small>
           </div>
         ))}
       </div>
 
-      <div className="stage3-filters" style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {(['all', 'approved', 'changes_requested', 'escalated'] as const).map(value => (
-          <button
-            key={value}
-            className="btn btn-sm"
-            onClick={() => setFilter(value)}
-            style={{
-              background: filter === value ? 'var(--primary)' : 'transparent',
-              color: filter === value ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
-              border: '1px solid var(--border)',
-            }}
+      <div className="review-history-controls">
+        <label className="review-history-search">
+          <Search size={13} />
+          <input
+            className="input"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search reviews, PRs, repositories, or reviewers"
+            aria-label="Search review history"
+          />
+        </label>
+
+        <div
+          className="review-history-decisions"
+          aria-label="Filter by human decision"
+        >
+          {(["all", "approved", "changes_requested", "escalated"] as const).map(
+            (value) => (
+              <button
+                key={value}
+                className={`btn btn-sm ${
+                  filter === value ? "btn-primary" : "btn-ghost"
+                }`}
+                onClick={() => setFilter(value)}
+              >
+                {value === "all"
+                  ? "All Decisions"
+                  : decisionConfig[value].label}
+              </button>
+            ),
+          )}
+        </div>
+
+        <label className="review-history-repository">
+          <select
+            value={repository}
+            onChange={(event) => setRepository(event.target.value)}
+            aria-label="Filter by repository"
           >
-            {value === 'all' ? 'All decisions' : decisionConfig[value].label}
-          </button>
-        ))}
+            <option value="all">All repositories</option>
+            {repositories.map((repo) => (
+              <option key={repo} value={repo}>
+                {repo}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={11} />
+        </label>
       </div>
 
-      {/* Timeline */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {visibleReviews.map((r) => {
-          const dcfg = decisionConfig[r.decision];
-          const DIcon = dcfg.icon;
+      <div className="review-history-list">
+        {visibleReviews.map((review) => {
+          const decision = decisionConfig[(review.decision as Decision)]
+          const DecisionIcon = decision.icon
 
           return (
-            <div
-              key={r.id}
-              style={{
-                background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: '8px', overflow: 'hidden',
-                transition: 'border-color 150ms', cursor: 'pointer',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--primary) 30%, var(--border))')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-            >
-              {/* Status stripe */}
-              <div style={{ height: '2px', background: dcfg.color }} />
+            <article className="review-history-card" key={review.id}>
+              <div className={`review-history-stripe ${decision.className}`} />
+              <div className="review-history-card-body">
+                <div className="review-history-card-top">
+                  <span className="review-history-id">{review.id}</span>
+                  <span
+                    className={`review-history-decision ${decision.className}`}
+                  >
+                    <DecisionIcon size={10} />
+                    {decision.label}
+                  </span>
+                  <span
+                    className={
+                      review.findings > 0
+                        ? "review-history-findings has-findings"
+                        : "review-history-findings"
+                    }
+                  >
+                    <ShieldAlert size={11} />
+                    {review.findings}{" "}
+                    {review.findings === 1 ? "finding" : "findings"}
+                  </span>
+                </div>
 
-              <div style={{ padding: '16px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{r.id}</span>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: '4px',
-                        padding: '2px 8px',
-                        background: `color-mix(in srgb, ${dcfg.color} 12%, transparent)`,
-                        border: `1px solid color-mix(in srgb, ${dcfg.color} 30%, transparent)`,
-                        borderRadius: '4px',
-                      }}>
-                        <DIcon size={10} style={{ color: dcfg.color }} />
-                        <span style={{ fontSize: '0.7rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: dcfg.color }}>
-                          {dcfg.label}
-                        </span>
-                      </div>
-                      {r.findings > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <ShieldAlert size={11} style={{ color: 'var(--severity-medium)' }} />
-                          <span style={{ fontSize: '0.75rem', color: 'var(--severity-medium)' }}>{r.findings} finding{r.findings > 1 ? 's' : ''}</span>
-                        </div>
-                      )}
-                    </div>
+                <div
+                  className="review-history-title"
+                  role="heading"
+                  aria-level={3}
+                >
+                  {review.title}
+                </div>
+                <div className="review-history-metadata">
+                  {review.repo} · PR #{review.pr} · {review.date} at{" "}
+                  {review.time} · {review.duration}
+                </div>
 
-                    <div style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--foreground)', marginBottom: '4px' }}>
-                      {r.title}
+                <div className="review-history-workflow">
+                  <div className="review-history-ai">
+                    <div className="review-history-block-label">
+                      <OrbXS size={11} variant="active" /> AI Analysis
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '12px' }}>
-                      {r.repo} · PR #{r.pr} · {r.date} at {r.time} · {r.duration}
-                    </div>
-
-                    {/* Notes */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                        <OrbXS size={12} variant="active" style={{ marginTop: '2px', flexShrink: 0 }} />
-                        <span style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>
-                          AI analysis complete — {r.findings === 0 ? 'no findings detected' : `${r.findings} issue${r.findings > 1 ? 's' : ''} flagged`}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                        <User size={12} style={{ color: 'var(--secondary-foreground)', marginTop: '2px', flexShrink: 0 }} />
-                        <span style={{ fontSize: '0.8rem', color: 'var(--secondary-foreground)', fontStyle: 'italic' }}>
-                          "{r.humanNote}"
-                        </span>
-                      </div>
-                    </div>
+                    <strong>
+                      <CheckCircle size={12} />{" "}
+                      {review.aiStatus === "complete"
+                        ? "Complete"
+                        : "In progress"}
+                    </strong>
+                    <span>
+                      {review.findings === 0
+                        ? "No security findings detected"
+                        : `${review.findings} security ${
+                            review.findings === 1 ? "finding" : "findings"
+                          } detected`}
+                    </span>
                   </div>
 
-                  {/* Reviewer */}
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '500' }}>{r.reviewer}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Reviewer</div>
+                  <div className="review-history-human">
+                    <div className="review-history-block-label">
+                      <User size={11} /> Human Decision
+                    </div>
+                    <strong className={decision.className}>
+                      <DecisionIcon size={12} /> {decision.label}
+                    </strong>
+                    <span>Reviewer: {review.reviewer}</span>
                   </div>
                 </div>
+
+                <div className="review-history-note">
+                  <span>Review summary</span>
+                  <p>{review.humanNote}</p>
+                </div>
               </div>
-            </div>
-          );
+            </article>
+          )
         })}
+
+        {visibleReviews.length === 0 && (
+          <div className="review-history-empty">
+            <Clock size={20} />
+            <strong>No reviews match these filters</strong>
+            <span>
+              Adjust the decision, repository, or search filters to view more
+              review history.
+            </span>
+          </div>
+        )}
       </div>
     </div>
-  );
+  )
 }
