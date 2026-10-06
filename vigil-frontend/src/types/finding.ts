@@ -12,6 +12,7 @@ export type FindingSource =
 
 export type FindingCategory =
   | 'SECURITY'
+  | 'PROMPT_INJECTION'
   | 'LOGIC'
   | 'ERROR_HANDLING'
   | 'TESTING'
@@ -20,6 +21,7 @@ export type FindingCategory =
   | 'DOCUMENTATION'
   | 'PERFORMANCE'
   | string;
+
 
 export type FindingStatus = 'OPEN' | 'ACKNOWLEDGED' | 'FALSE_POSITIVE' | 'RESOLVED' | string;
 

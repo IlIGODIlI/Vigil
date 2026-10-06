@@ -105,7 +105,7 @@ export default function SecurityPipelineVisual() {
       </svg>
 
       <div className="pipeline-stage pipeline-stage--input"><span>01</span><strong>Input</strong><small>Code change</small></div>
-      <div className="pipeline-stage pipeline-stage--analysis"><span>02</span><strong>AI Analysis</strong><small>Context and risk</small></div>
+      <div className="pipeline-stage pipeline-stage--analysis"><span>02</span><strong>AI Analysis</strong><small>Injection defense + risk</small></div>
       <div className="pipeline-stage pipeline-stage--intelligence"><span>03</span><strong>Security Insight</strong><small>Prioritized signal</small></div>
       <div className="pipeline-stage pipeline-stage--action"><span>04</span><strong>Action</strong><small>Fix with confidence</small></div>
     </div>

@@ -138,8 +138,38 @@ class DeepReviewOrchestrator:
 
     async def review(self, context: ReviewContext) -> ReviewResult:
         """Executes full Deep Intelligence Engine review pipeline."""
+        from app.services.ai.security.prompt_injection import prompt_injection_detector
+        from app.services.ai.review.schemas import FindingConfidence
+
         model_calls = 0
         warnings: List[str] = []
+
+        # 0. Run prompt injection scan on all untrusted context BEFORE any LLM call
+        injection_results = prompt_injection_detector.scan_context(context)
+        injection_findings: List[ReviewFinding] = []
+        for inj in injection_results:
+            injection_finding = ReviewFinding(
+                category=FindingCategory.PROMPT_INJECTION,
+                severity=FindingSeverity.HIGH,
+                confidence=FindingConfidence.HIGH,
+                title="Prompt Injection Detected",
+                file=inj.file_path or "untrusted_input",
+                line=inj.line_number,
+                problem=(
+                    "Instruction-like content was detected inside repository-derived content. "
+                    "Repository content is treated as untrusted data and must not be followed as an instruction by the AI reviewer."
+                ),
+                why=f"{inj.reason}. Matched indicator: '{inj.matched_indicators[0] if inj.matched_indicators else ''}'",
+                evidence=inj.evidence or (inj.matched_indicators[0] if inj.matched_indicators else None),
+                suggestion="Remove instruction-hijacking directives, pseudo-system prompts, or prompt injection attempts from repository content.",
+                source="SECURITY_DETECTOR",
+                is_grounded=True,
+            )
+            injection_findings.append(injection_finding)
+            warnings.append(
+                f"SECURITY: Prompt injection attempt detected in '{inj.file_path or 'untrusted_input'}' "
+                f"at line {inj.line_number}: {inj.reason}"
+            )
 
         # 1. PLAN PASS
         plan = await self.planner.plan(context)
@@ -205,18 +235,25 @@ class DeepReviewOrchestrator:
         }
 
         # Build narrative summary
+        injection_note = (
+            f"\n- ⚠ {len(injection_findings)} prompt injection attempt(s) detected and blocked by security detector."
+            if injection_findings else ""
+        )
         summary = (
             f"Deep Intelligence Code Review ({plan.strategy} strategy):\n"
             f"- Analyzed {len(examined_files)} changed files and generated {len(candidates)} candidate hypotheses.\n"
             f"- Deeply investigated {investigated_count} high-priority targets; validated {len(final_findings)} evidence-grounded findings.\n"
             f"- Strategy: {plan.summary}"
+            f"{injection_note}"
         )
+
+        all_findings = injection_findings + final_findings
 
         return ReviewResult(
             summary=summary,
-            findings=final_findings,
+            findings=all_findings,
             model=settings.AI_MODEL,
-            status=ReviewStatus.SUCCESS if not warnings or final_findings else ReviewStatus.WARNING,
+            status=ReviewStatus.SUCCESS if not warnings or all_findings else ReviewStatus.WARNING,
             warnings=warnings,
             validation_metadata=meta,
         )

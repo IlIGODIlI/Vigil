@@ -8,6 +8,7 @@ class FindingCategory(str, Enum):
 
     SECURITY = "Security"
     AUTHORIZATION = "Authorization"
+    PROMPT_INJECTION = "Prompt Injection"
     LOGIC = "Logic"
     RELIABILITY = "Reliability"
     ERROR_HANDLING = "Error Handling"
@@ -17,6 +18,7 @@ class FindingCategory(str, Enum):
     CODE_QUALITY = "Code Quality"
     DOCUMENTATION = "Documentation"
     PERFORMANCE = "Performance"
+
 
 
 class FindingSeverity(str, Enum):

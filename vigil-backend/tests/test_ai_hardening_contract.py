@@ -522,8 +522,10 @@ async def test_prompt_injection_in_pr_description_contained(db_session, sample_p
         persist=False,
     )
 
-    assert response.findings_count == 1
-    assert response.findings[0].title == "Subprocess shell injection"
+    assert response.findings_count >= 1
+    titles = [f.title for f in response.findings]
+    assert "Subprocess shell injection" in titles
+
 
 
 @pytest.mark.asyncio

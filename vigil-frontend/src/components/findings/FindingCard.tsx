@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, MapPin, FileCode, AlertTriangle, Lightbulb, Search, Tag } from 'lucide-react';
+import { ChevronDown, ChevronRight, MapPin, FileCode, AlertTriangle, Lightbulb, Search, Tag, ShieldAlert } from 'lucide-react';
 import type { FindingRead } from '../../types';
 import { Card, CardContent } from '../common/Card';
 import { Badge } from '../common/Badge';
@@ -13,6 +13,7 @@ interface FindingCardProps {
 function getCategoryLabel(category: string): string {
   const labels: Record<string, string> = {
     SECURITY: 'Security',
+    PROMPT_INJECTION: 'Prompt Injection',
     LOGIC: 'Logic',
     ERROR_HANDLING: 'Error Handling',
     TESTING: 'Testing',
@@ -31,9 +32,11 @@ function getSourceLabel(source: string): string {
     TRIVY: 'Trivy',
     MS_SECURITY_DEVOPS: 'MS Security DevOps',
     AI_REVIEW: 'SecurePR AI',
+    SECURITY_DETECTOR: 'Security Detector',
   };
   return labels[source.toUpperCase()] || source;
 }
+
 
 function getStatusVariant(status: string): 'outline' | 'critical' | 'success' | 'secondary' {
   switch (status.toUpperCase()) {
@@ -48,13 +51,24 @@ function getStatusVariant(status: string): 'outline' | 'critical' | 'success' | 
 export const FindingCard: React.FC<FindingCardProps> = ({ finding }) => {
   const [expanded, setExpanded] = useState(false);
   const evidence = finding.evidence;
+  const isInjectionFinding = finding.category.toUpperCase() === 'PROMPT_INJECTION';
 
   return (
     <Card className={cn(
       'transition-all',
-      finding.severity.toUpperCase() === 'CRITICAL' && 'border-red-900/40',
-      finding.severity.toUpperCase() === 'HIGH' && 'border-orange-900/30',
+      isInjectionFinding && 'border-red-600/60 bg-red-950/10',
+      !isInjectionFinding && finding.severity.toUpperCase() === 'CRITICAL' && 'border-red-900/40',
+      !isInjectionFinding && finding.severity.toUpperCase() === 'HIGH' && 'border-orange-900/30',
     )}>
+      {/* Injection threat strip */}
+      {isInjectionFinding && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-red-950/60 border-b border-red-700/50 rounded-t-xl">
+          <ShieldAlert className="w-3.5 h-3.5 text-red-400 shrink-0" />
+          <span className="text-[11px] font-semibold text-red-300 uppercase tracking-wider">
+            Prompt Injection — AI Manipulation Attempt Blocked
+          </span>
+        </div>
+      )}
       {/* Header — always visible */}
       <button
         className="w-full text-left p-4 flex items-start gap-3 group hover:bg-slate-800/20 transition-colors rounded-t-xl"

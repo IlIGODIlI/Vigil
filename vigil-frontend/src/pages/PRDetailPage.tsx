@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ChevronLeft, Cpu, Shield, GitCommit, FileText, Send,
-  RotateCcw, CheckCircle, AlertTriangle, Loader2, Clock
+  RotateCcw, CheckCircle, AlertTriangle, Loader2, Clock, ShieldAlert
 } from 'lucide-react';
 import { pullRequestService } from '../services/pullRequestService';
 import { repositoryService } from '../services/repositoryService';
@@ -412,6 +412,27 @@ if (finalStatus === 'COMPLETED') {
                 onRetry={() => id && loadFindingsAndReview(id)}
               />
             )}
+
+            {/* Prompt Injection Security Alert Banner */}
+            {!findingsLoading && findings.some(f => f.category.toUpperCase() === 'PROMPT_INJECTION') && (
+              <div className="flex items-start gap-3 p-4 bg-red-950/40 border border-red-700/60 rounded-xl animate-pulse-once">
+                <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-red-300 mb-1">
+                    ⚠ Prompt Injection Attempt Detected &amp; Blocked
+                  </p>
+                  <p className="text-xs text-red-300/80 leading-relaxed">
+                    VIGIL's security detector identified instruction-hijacking content in this repository's code,
+                    comments, or PR description. This content attempted to override the AI reviewer's behavior.
+                    The attempt was blocked — findings below reflect an unbiased security review.
+                  </p>
+                </div>
+                <span className="shrink-0 text-[10px] font-mono px-2 py-1 rounded bg-red-900/50 text-red-300 border border-red-700/50 uppercase tracking-wider">
+                  SECURITY DETECTOR
+                </span>
+              </div>
+            )}
+
             {!findingsLoading && !findingsError && findings.length === 0 && (
               <EmptyState
                 icon={<Shield className="w-6 h-6" />}
