@@ -20,6 +20,17 @@ export default function Shell() {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const openNavForTour = () => setMobileNavOpen(true);
+    const closeNavAfterTour = () => setMobileNavOpen(false);
+    window.addEventListener('vigil-tour-start', openNavForTour);
+    window.addEventListener('vigil-tour-end', closeNavAfterTour);
+    return () => {
+      window.removeEventListener('vigil-tour-start', openNavForTour);
+      window.removeEventListener('vigil-tour-end', closeNavAfterTour);
+    };
+  }, []);
+
   return (
     <div className={`app-shell${navCollapsed ? ' nav-collapsed' : ''}`} style={{
       display: 'flex',

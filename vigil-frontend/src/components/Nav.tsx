@@ -44,7 +44,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: ShieldAlert,
     key: 'findings',
     path: '/findings',
-    description: 'View detected security vulnerabilities and findings',
+    description: 'View security findings detected during AI analysis',
   },
   {
     icon: GitCommitHorizontal,
@@ -58,12 +58,6 @@ const NAV_ITEMS: NavItem[] = [
     path: '/analytics',
     description: 'View security and review analytics',
   },
-  {
-  icon: GitPullRequest,
-  key: 'reviewQueue',
-  path: '/review-queue',
-  description: 'Open pull requests awaiting human review and decision',
-},
   {
     icon: Clock,
     key: 'reviewHistory',
@@ -170,6 +164,7 @@ export default function Nav({ collapsed, onCollapseToggle, mobileOpen = false, o
               >
                 <NavLink
                   to={item.path}
+                  data-tour-target={`nav-${item.key}`}
                   onClick={onMobileClose}
                   style={({ isActive }) => ({
                     display: 'flex',
