@@ -12,7 +12,11 @@ import app.models  # Ensures all SQLAlchemy models are registered onto Base.meta
 config = context.config
 
 # Set DB URL dynamically from app settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+db_url = settings.DATABASE_URL or "sqlite:///./vigil.db"
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+config.set_main_option("sqlalchemy.url", db_url)
+
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

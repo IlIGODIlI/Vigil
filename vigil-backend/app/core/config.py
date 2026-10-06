@@ -29,10 +29,6 @@ class Settings(BaseSettings):
     AI_API_KEY: str = ""
     AI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     AI_MODEL: str = "gemini-3.8-flash"
-    # Member 3 AI Review specific settings
-    AI_API_KEY: str = ""
-    AI_BASE_URL: str = "https://api.groq.com/openai/v1"
-    AI_MODEL: str = "gemma2-9b-it"
     AI_TIMEOUT_SECONDS: float = 60.0
     AI_MAX_RETRIES: int = 3
 

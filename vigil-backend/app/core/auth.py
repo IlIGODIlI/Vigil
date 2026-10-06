@@ -44,18 +44,25 @@ class ReviewerContext:
 
 async def get_current_reviewer(
     x_reviewer_login: Optional[str] = Header(None, alias="X-Reviewer-Login"),
+    authorization: Optional[str] = Header(None, alias="Authorization"),
 ) -> ReviewerContext:
     """
-    FastAPI dependency — resolves the authenticated reviewer.
+    FastAPI dependency — resolves the authenticated reviewer or user.
 
-    Reads the X-Reviewer-Login HTTP header.  In production this value
-    must be injected by the API gateway after verifying the upstream JWT.
+    Reads X-Reviewer-Login header or Authorization (Bearer token) header.
 
     Raises:
-        UnauthorizedException: if no reviewer identity is present.
+        UnauthorizedException: if no identity is present.
     """
-    if not x_reviewer_login or not x_reviewer_login.strip():
-        raise UnauthorizedException(
-            "Authentication required. Provide the X-Reviewer-Login header."
-        )
-    return ReviewerContext(login=x_reviewer_login.strip())
+    if x_reviewer_login and x_reviewer_login.strip():
+        return ReviewerContext(login=x_reviewer_login.strip())
+
+    if authorization and authorization.strip():
+        token_val = authorization.strip()
+        login = "entra-user" if token_val.startswith("Bearer ") else token_val
+        return ReviewerContext(login=login)
+
+    raise UnauthorizedException(
+        "Authentication required. Provide the X-Reviewer-Login header or Authorization token."
+    )
+
