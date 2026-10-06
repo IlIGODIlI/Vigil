@@ -27,6 +27,32 @@ const PRS = [
     ],
   },
   {
+    id: 52, title: 'fix: restrict production CORS origins', repo: 'auth-service',
+    author: 'Anita Bose', branch: 'fix/cors-origins', base: 'main',
+    severity: 'low', findings: 1, files: 2, additions: 8, deletions: 3,
+    aiStatus: 'complete', humanStatus: 'pending', time: '1d ago', comments: 1,
+    description: 'Restricts production CORS configuration to approved application origins.',
+    findings_data: [
+      { severity: 'low', title: 'Overly broad CORS configuration', file: 'src/server/config.go', line: 23, desc: 'CORS currently allows all origins and should be restricted before production exposure.', impact: 'Untrusted origins could interact with endpoints that rely on browser origin controls.', fix: 'Replace the wildcard with an explicit list of approved production origins.' },
+    ],
+  },
+  {
+    id: 53, title: 'fix: sanitize search endpoint input', repo: 'api-gateway',
+    author: 'Priya Sharma', branch: 'fix/search-input', base: 'main',
+    severity: 'info', findings: 0, files: 2, additions: 12, deletions: 3,
+    aiStatus: 'complete', humanStatus: 'pending', time: '1h ago', comments: 1,
+    description: 'Updates search input handling and request-length validation.',
+    findings_data: [],
+  },
+  {
+    id: 54, title: 'feat: add rate limiting to auth routes', repo: 'auth-service',
+    author: 'Anita Bose', branch: 'feat/auth-rate-limit', base: 'main',
+    severity: 'info', findings: 0, files: 3, additions: 34, deletions: 2,
+    aiStatus: 'complete', humanStatus: 'pending', time: '5h ago', comments: 2,
+    description: 'Adds rate-limit middleware to authentication routes.',
+    findings_data: [],
+  },
+  {
     id: 43, title: 'refactor: extract auth middleware', repo: 'auth-service',
     author: 'Anita Bose', branch: 'refactor/auth-middleware', base: 'main',
     severity: 'low', findings: 0, files: 6, additions: 89, deletions: 112,
@@ -45,11 +71,28 @@ const PRS = [
 ];
 
 type PR = typeof PRS[0];
+type AnalysisState = 'idle' | 'analyzing' | 'complete' | 'failed';
 
 function SevBadge({ s }: { s: string }) {
   const cls = `sev sev-${s === 'medium' ? 'medium' : s}`;
-  const labels: Record<string, string> = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low', info: 'Info' };
+  const labels: Record<string, string> = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low', info: 'No findings' };
   return <span className={cls}>{labels[s] ?? s}</span>;
+}
+
+function findingsSummary(pr: PR, analysisState: AnalysisState = pr.aiStatus === 'analyzing' ? 'analyzing' : 'complete') {
+  if (analysisState === 'idle' || analysisState === 'analyzing') return 'Findings pending';
+  if (analysisState === 'failed') return 'Analysis unavailable';
+  if (pr.findings_data.length === 0) return 'No security findings';
+
+  const order = ['critical', 'high', 'medium', 'low'] as const;
+  return order
+    .map(severity => ({
+      severity,
+      count: pr.findings_data.filter(finding => finding.severity === severity).length,
+    }))
+    .filter(item => item.count > 0)
+    .map(item => `${item.count} ${item.severity.charAt(0).toUpperCase()}${item.severity.slice(1)}`)
+    .join(' · ');
 }
 
 function PRListItem({ pr, active, onClick }: { pr: PR; active: boolean; onClick: () => void }) {
@@ -85,12 +128,16 @@ function PRListItem({ pr, active, onClick }: { pr: PR; active: boolean; onClick:
       <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: 4 }}>
         {pr.repo} · {pr.author} · {pr.time}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '3px 8px', fontSize: '0.72rem' }}>
         <span style={{ color: pr.aiStatus === 'complete' ? 'var(--status-safe)' : 'var(--ai)' }}>
-          AI {pr.aiStatus === 'complete' ? 'reviewed' : 'analyzing'}
+          {pr.aiStatus === 'complete' ? 'AI analysis complete' : 'AI analyzing'}
         </span>
         <span style={{ color: pr.findings > 0 ? 'var(--status-critical)' : 'var(--muted-foreground)' }}>
-          {pr.findings} finding{pr.findings === 1 ? '' : 's'}
+          {pr.humanStatus === 'pending' && pr.aiStatus === 'complete'
+            ? `Human review pending · ${pr.findings} finding${pr.findings === 1 ? '' : 's'}`
+            : pr.humanStatus === 'approved'
+              ? `Reviewed · ${pr.findings} finding${pr.findings === 1 ? '' : 's'}`
+              : 'Findings pending'}
         </span>
       </div>
     </div>
@@ -100,14 +147,14 @@ function PRListItem({ pr, active, onClick }: { pr: PR; active: boolean; onClick:
 function PRDetail({ pr }: { pr: PR }) {
   const [tab, setTab] = useState<'overview' | 'findings' | 'files' | 'commits'>('overview');
   const [decision, setDecision] = useState(pr.humanStatus);
-  const [analysisState, setAnalysisState] = useState<'idle' | 'analyzing' | 'complete' | 'failed'>(
-    pr.aiStatus === 'analyzing' ? 'idle' : 'complete',
+  const [analysisState, setAnalysisState] = useState<AnalysisState>(
+    pr.aiStatus === 'analyzing' ? 'analyzing' : 'complete',
   );
 
   useEffect(() => {
     setTab('overview');
     setDecision(pr.humanStatus);
-    setAnalysisState(pr.aiStatus === 'analyzing' ? 'idle' : 'complete');
+    setAnalysisState(pr.aiStatus === 'analyzing' ? 'analyzing' : 'complete');
   }, [pr.id, pr.aiStatus, pr.humanStatus]);
 
   const runAnalysis = () => {
@@ -140,7 +187,7 @@ function PRDetail({ pr }: { pr: PR }) {
             {pr.author} · {pr.time}
           </span>
           <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: decision === 'approved' ? 'var(--status-safe)' : decision === 'pending' ? 'var(--status-warn)' : 'var(--status-critical)' }}>
-            {decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Changes requested' : decision === 'escalated' ? 'Escalated' : 'Human review pending'}
+            {decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Changes requested' : 'Human review pending'}
           </span>
         </div>
         <h2 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--foreground)', margin: '0 0 8px', lineHeight: 1.3 }}>
@@ -183,8 +230,8 @@ function PRDetail({ pr }: { pr: PR }) {
             : analysisState === 'failed'
             ? 'Analysis failed. No results were changed.'
             : pr.findings > 0
-            ? `AI found ${pr.findings} security issue${pr.findings > 1 ? 's' : ''} — review required`
-            : 'AI analysis complete — no security concerns'}
+            ? `AI found ${pr.findings} security finding${pr.findings > 1 ? 's' : ''} — human review required`
+            : 'AI analysis complete — no security findings'}
         </span>
         {analysisState === 'idle' && (
           <button className="btn btn-primary btn-sm" onClick={runAnalysis}>Run analysis</button>
@@ -204,7 +251,7 @@ function PRDetail({ pr }: { pr: PR }) {
         {(['overview', 'findings', 'files', 'commits'] as const).map(t => (
           <button
             key={t}
-            className={`tab${tab === t ? ' active' : ''}`}
+            className={`tab${tab === t ? ' active' : ''}${t === 'findings' && pr.findings > 0 ? ' pr-findings-tab' : ''}`}
             onClick={() => setTab(t)}
           >
             {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -223,8 +270,8 @@ function PRDetail({ pr }: { pr: PR }) {
           <div>
             <div className="stage3-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
               {[
-                ['AI Review', analysisState === 'complete' ? 'Complete' : analysisState === 'analyzing' ? 'In progress' : 'Ready', analysisState === 'complete' ? 'var(--status-safe)' : 'var(--ai)'],
-                ['Human decision', decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Changes requested' : decision === 'escalated' ? 'Escalated' : 'Pending', decision === 'approved' ? 'var(--status-safe)' : decision === 'pending' ? 'var(--muted-foreground)' : 'var(--status-critical)'],
+                ['AI Analysis', analysisState === 'complete' ? 'Complete' : analysisState === 'analyzing' ? 'In progress' : analysisState === 'failed' ? 'Failed' : 'Ready', analysisState === 'complete' ? 'var(--status-safe)' : analysisState === 'failed' ? 'var(--status-critical)' : 'var(--ai)'],
+                ['Human Review', decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Changes requested' : 'Pending', decision === 'approved' ? 'var(--status-safe)' : decision === 'pending' ? 'var(--muted-foreground)' : 'var(--status-critical)'],
                 ['Files changed', String(pr.files), 'var(--foreground)'],
                 ['Code delta', `+${pr.additions} / -${pr.deletions}`, 'var(--foreground)'],
               ].map(([label, value, color]) => (
@@ -239,13 +286,26 @@ function PRDetail({ pr }: { pr: PR }) {
               ))}
             </div>
 
+            <div className={`pr-findings-summary${pr.findings > 0 ? ' has-findings' : ''}`}>
+              <ShieldAlert size={14} />
+              <div>
+                <span>Security findings</span>
+                <strong>{findingsSummary(pr, analysisState)}</strong>
+              </div>
+              {pr.findings > 0 && (
+                <button className="btn btn-ghost btn-sm" onClick={() => setTab('findings')}>
+                  View findings
+                </button>
+              )}
+            </div>
+
             {/* Human review decision */}
             {decision === 'pending' && analysisState === 'complete' && (
               <div className="pr-human-decision" style={{ border: '1px solid var(--border)', borderRadius: 5, padding: '14px 16px' }}>
-                <div className="pr-human-decision-label">Human decision required</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>Your review decision</div>
+                <div className="pr-human-decision-label">Human review required</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>Make the final decision</div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', margin: '0 0 14px', lineHeight: 1.65 }}>
-                  AI analysis is complete. Review the findings and make your decision. This action is logged and attributed to your account.
+                  AI analysis is complete. Review the security findings and make the final decision.
                 </p>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn btn-sm" onClick={() => setDecision('approved')} style={{ background: 'var(--status-safe)', color: '#000', fontWeight: 600 }}>
@@ -254,7 +314,6 @@ function PRDetail({ pr }: { pr: PR }) {
                   <button className="btn btn-sm btn-secondary" onClick={() => setDecision('rejected')} style={{ borderColor: 'color-mix(in srgb, var(--status-warn) 40%, var(--border))', color: 'var(--status-warn)' }}>
                     <XCircle size={12} /> Request changes
                   </button>
-                  <button className="btn btn-sm btn-ghost" onClick={() => setDecision('escalated')}>Escalate</button>
                 </div>
               </div>
             )}
@@ -263,7 +322,7 @@ function PRDetail({ pr }: { pr: PR }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: `color-mix(in srgb, ${decision === 'approved' ? 'var(--status-safe)' : 'var(--status-warn)'} 8%, var(--secondary))`, borderRadius: 5 }}>
                 {decision === 'approved' ? <CheckCircle size={14} style={{ color: 'var(--status-safe)' }} /> : <XCircle size={14} style={{ color: 'var(--status-warn)' }} />}
                 <span style={{ fontSize: '0.78rem', color: decision === 'approved' ? 'var(--status-safe)' : 'var(--status-warn)', fontWeight: 500 }}>
-                  {decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Changes requested' : 'Escalated'} — decision recorded
+                  Final decision: {decision === 'approved' ? 'Approved' : 'Changes requested'}
                 </span>
               </div>
             )}
@@ -277,7 +336,7 @@ function PRDetail({ pr }: { pr: PR }) {
               <CheckCircle size={18} style={{ color: 'var(--status-safe)' }} />
             </div>
             <div className="empty-title">No security findings</div>
-            <div className="empty-sub">This pull request passed AI security analysis without any issues detected.</div>
+            <div className="empty-sub">Vigil's AI analysis did not surface security findings for this pull request.</div>
           </div>
         )}
 
@@ -305,7 +364,7 @@ function PRDetail({ pr }: { pr: PR }) {
                     <span style={{ fontSize: '0.72rem', color: 'var(--secondary-foreground)' }}>{f.impact}</span>
                   </div>
                   <div style={{ padding: '8px 10px', background: 'color-mix(in srgb, var(--ai) 6%, var(--secondary))', borderRadius: 4, borderLeft: '2px solid var(--ai)' }}>
-                    <div className="ai-tag" style={{ marginBottom: 4, display: 'inline-flex' }}>AI fix</div>
+                    <div className="ai-tag" style={{ marginBottom: 4, display: 'inline-flex' }}>Review guidance</div>
                     <p style={{ fontSize: '0.72rem', color: 'var(--secondary-foreground)', lineHeight: 1.6, margin: 0 }}>{f.fix}</p>
                   </div>
                 </div>
@@ -340,7 +399,7 @@ function PRDetail({ pr }: { pr: PR }) {
                   <div style={{ fontSize: '0.75rem', color: 'var(--secondary-foreground)' }}>{message} · {author}</div>
                 </div>
                 <span style={{ fontSize: '0.72rem', color: index === 0 && pr.findings > 0 ? 'var(--status-critical)' : 'var(--status-safe)' }}>
-                  {index === 0 && pr.findings > 0 ? 'Concern introduced' : 'No new findings'}
+                  {index === 0 && pr.findings > 0 ? 'Finding associated' : 'No findings associated'}
                 </span>
               </div>
             ))}
@@ -359,7 +418,7 @@ export default function PullRequests() {
 
   const filtered = PRS.filter(pr =>
     filter === 'all' ? true :
-    filter === 'pending' ? pr.humanStatus === 'pending' :
+    filter === 'pending' ? pr.humanStatus === 'pending' && pr.aiStatus === 'complete' :
     pr.humanStatus !== 'pending'
   );
 
@@ -367,7 +426,7 @@ export default function PullRequests() {
     <div className="v-page stage3-page" style={{ maxWidth: 1160 }}>
       <PageHeader
         title="Pull Requests"
-        subtitle="AI-reviewed pull requests awaiting your decision"
+        subtitle="Review AI-analyzed pull requests and security findings"
       />
 
       <div className="stage3-filters" style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
