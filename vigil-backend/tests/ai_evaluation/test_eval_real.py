@@ -22,6 +22,8 @@ def test_provider_configuration_safety():
 
     # Verify key properties exist and are properly configured
     assert config_metadata["model"], "AI_MODEL must be set in settings"
+    # Verify key properties exist
+    assert config_metadata["model"] == settings.AI_MODEL
     assert config_metadata["timeout"] == 60.0
     assert config_metadata["max_retries"] == 3
 

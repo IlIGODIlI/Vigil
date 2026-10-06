@@ -34,6 +34,31 @@ class ReviewService:
         raise ResourceNotFoundException(f"No review found for pull request with ID '{pull_request_id}'")
 
     @staticmethod
+    async def execute_ai_review(
+        db: Session,
+        pull_request_id: uuid.UUID,
+        custom_instructions: Optional[str] = None,
+        persist: bool = False,
+        analysis_id: Optional[uuid.UUID] = None,
+        changed_files: Optional[List[ChangedFileContext]] = None,
+        scanner_findings: Optional[List[ScannerFindingContext]] = None,
+        repository_structure: Optional[RepositoryStructureContext] = None,
+        review_depth: str = "standard",
+    ) -> 'AIReviewResponse':
+        from app.services.ai_review_service import ai_review_service
+        return await ai_review_service.review_pull_request(
+            db=db,
+            pull_request_id=pull_request_id,
+            custom_instructions=custom_instructions,
+            persist=persist,
+            analysis_id=analysis_id,
+            changed_files=changed_files,
+            scanner_findings=scanner_findings,
+            repository_structure=repository_structure,
+            review_depth=review_depth,
+        )
+
+    @staticmethod
     async def publish_review(db: Session, review_id: uuid.UUID) -> ReviewRead:
         from app.models.finding import FindingStatus
         from app.models.repository import Repository

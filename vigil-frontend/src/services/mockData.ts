@@ -1,0 +1,240 @@
+import type {
+  RepositoryRead,
+  PullRequestRead,
+  FindingRead,
+  ReviewRead,
+  CommitRead,
+  CommitAnalysisRead,
+  ReviewQueueItem,
+} from '../types';
+
+export const fallbackRepositories: RepositoryRead[] = [
+  {
+    id: '11111111-1111-1111-1111-111111111111',
+    user_id: '00000000-0000-0000-0000-000000000001',
+    github_repo_id: 101,
+    owner_login: 'vigil-sec',
+    name: 'payment-gateway-service',
+    full_name: 'vigil-sec/payment-gateway-service',
+    default_branch: 'main',
+    private: true,
+    html_url: 'https://github.com/vigil-sec/payment-gateway-service',
+    is_active: true,
+    created_at: '2026-03-01T10:00:00Z',
+    updated_at: '2026-03-20T14:30:00Z',
+  },
+  {
+    id: '22222222-2222-2222-2222-222222222222',
+    user_id: '00000000-0000-0000-0000-000000000001',
+    github_repo_id: 102,
+    owner_login: 'vigil-sec',
+    name: 'auth-identity-provider',
+    full_name: 'vigil-sec/auth-identity-provider',
+    default_branch: 'main',
+    private: true,
+    html_url: 'https://github.com/vigil-sec/auth-identity-provider',
+    is_active: true,
+    created_at: '2026-02-15T09:00:00Z',
+    updated_at: '2026-03-24T16:45:00Z',
+  },
+];
+
+export const fallbackPullRequests: PullRequestRead[] = [
+  {
+    id: '33333333-3333-3333-3333-333333333333',
+    repository_id: '11111111-1111-1111-1111-111111111111',
+    github_pr_id: 42,
+    pr_number: 42,
+    title: 'feat(payments): integrate Stripe 3D Secure verification flow',
+    description: 'Adds webhook handlers and webhook signature verification for 3DS authentication flow.',
+    author_login: 'sarah-dev',
+    source_branch: 'feature/stripe-3ds',
+    target_branch: 'main',
+    head_sha: 'a8b3c4d5e6f7a8b3c4d5e6f7a8b3c4d5e6f7a8b3',
+    base_sha: '99e8d7c6b5a499e8d7c6b5a499e8d7c6b5a499e8',
+    status: 'OPEN',
+    created_at: '2026-03-24T12:00:00Z',
+    updated_at: '2026-03-25T08:15:00Z',
+    closed_at: null,
+    merged_at: null,
+  },
+  {
+    id: '44444444-4444-4444-4444-444444444444',
+    repository_id: '11111111-1111-1111-1111-111111111111',
+    github_pr_id: 43,
+    pr_number: 43,
+    title: 'fix(crypto): replace hardcoded AES key with Azure KeyVault client',
+    description: 'Resolves token encryption vulnerability by reading key material from cloud HSM.',
+    author_login: 'alex-sec',
+    source_branch: 'hotfix/keyvault-migration',
+    target_branch: 'main',
+    head_sha: '1f2e3d4c5b6a1f2e3d4c5b6a1f2e3d4c5b6a1f2e',
+    base_sha: 'a8b3c4d5e6f7a8b3c4d5e6f7a8b3c4d5e6f7a8b3',
+    status: 'OPEN',
+    created_at: '2026-03-25T11:00:00Z',
+    updated_at: '2026-03-25T11:30:00Z',
+    closed_at: null,
+    merged_at: null,
+  },
+];
+
+export const fallbackFindings: FindingRead[] = [
+  {
+    id: '55555555-5555-5555-5555-555555555551',
+    analysis_id: '77777777-7777-7777-7777-777777777777',
+    source: 'SEMGREP',
+    category: 'SECURITY',
+    severity: 'CRITICAL',
+    rule_id: 'python.sqlalchemy.security.injection.tainted-sql-string',
+    fingerprint: 'fp-sqli-01a2b3',
+    file_path: 'app/services/payment_lookup.py',
+    start_line: 42,
+    end_line: 46,
+    message: 'Raw SQL statement formatted with untrusted request query parameter allows SQL Injection.',
+    status: 'OPEN',
+    evidence: {
+      problem: 'Direct string concatenation into raw SQL execution statement without parameter binding.',
+      why: 'An external attacker can manipulate the customer query parameter to execute arbitrary database queries, potentially extracting or altering transaction records.',
+      evidence: 'query = f"SELECT * FROM transactions WHERE customer_id = \'{cust_id}\' AND status = \'ACTIVE\'"',
+      suggestion: 'Use parameterized queries: `select(Transaction).where(Transaction.customer_id == cust_id)` with SQLAlchemy expression language.',
+      source: 'Semgrep Engine (Rule: python.sqlalchemy.security.injection)',
+    },
+    raw_artifact_uri: null,
+    created_at: '2026-03-25T13:00:00Z',
+  },
+  {
+    id: '55555555-5555-5555-5555-555555555552',
+    analysis_id: '77777777-7777-7777-7777-777777777777',
+    source: 'GITLEAKS',
+    category: 'SECURITY',
+    severity: 'HIGH',
+    rule_id: 'stripe-api-live-token',
+    fingerprint: 'fp-token-998877',
+    file_path: 'config/stripe_dev.json',
+    start_line: 12,
+    end_line: 12,
+    message: 'Possible Stripe live restricted secret key detected in committed configuration file.',
+    status: 'OPEN',
+    evidence: {
+      problem: 'Live Stripe API secret key exposed in version control file.',
+      why: 'Exposed live credentials allow unauthorized parties to interact with the Stripe payments infrastructure.',
+      evidence: '"api_secret": "rk_live_51P************************"',
+      suggestion: 'Immediately rotate the key in Stripe Dashboard and ingest from Azure KeyVault / environment variables.',
+      source: 'Gitleaks Detector',
+    },
+    raw_artifact_uri: null,
+    created_at: '2026-03-25T13:00:00Z',
+  },
+  {
+    id: '55555555-5555-5555-5555-555555555553',
+    analysis_id: '77777777-7777-7777-7777-777777777777',
+    source: 'AI_REVIEW',
+    category: 'ERROR_HANDLING',
+    severity: 'MEDIUM',
+    rule_id: 'vigil-ai-unhandled-webhook-timeout',
+    fingerprint: 'fp-ai-unhandled-timeout',
+    file_path: 'app/api/webhooks.py',
+    start_line: 88,
+    end_line: 94,
+    message: 'Webhook handler does not handle Stripe API timeout exceptions, leading to unhandled 500 error and duplicate webhook retries.',
+    status: 'OPEN',
+    evidence: {
+      problem: 'Missing try/except block around Stripe verification call.',
+      why: 'Transient gateway network timeouts will crash the webhook worker and trigger infinite retries from Stripe.',
+      evidence: 'event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)',
+      suggestion: 'Catch `stripe.error.SignatureVerificationError` and `stripe.error.StripeError` and respond with structured 400 status.',
+      source: 'SecurePR AI Code Analysis Engine',
+    },
+    raw_artifact_uri: null,
+    created_at: '2026-03-25T13:00:00Z',
+  },
+];
+
+export const fallbackReview: ReviewRead = {
+  id: '66666666-6666-6666-6666-666666666666',
+  analysis_id: '77777777-7777-7777-7777-777777777777',
+  status: 'READY',
+  summary: 'SecurePR AI automated review completed with 3 findings (1 Critical, 1 High, 1 Medium). Action required before merge.',
+  review_body: `### SecurePR AI Review Summary
+
+- **Status**: Requires Human Remediation
+- **Total Findings**: 3 issues identified across security, secrets, and error handling.
+- **Key Concerns**:
+  1. SQL injection in transaction search query.
+  2. Potential live secret in configuration file.
+  3. Unhandled webhook exceptions leading to duplicate processing.
+
+**Recommendation**: Remediate the SQL injection parameterization and rotate the exposed secret before approving this pull request.`,
+  github_review_id: null,
+  published_at: null,
+  created_at: '2026-03-25T13:05:00Z',
+  updated_at: '2026-03-25T13:05:00Z',
+};
+
+export const fallbackCommits: CommitRead[] = [
+  {
+    id: '88888888-8888-8888-8888-888888888881',
+    repository_id: '11111111-1111-1111-1111-111111111111',
+    sha: 'a8b3c4d5e6f7a8b3c4d5e6f7a8b3c4d5e6f7a8b3',
+    message: 'feat(webhook): add signature verification and event dispatching',
+    author_login: 'sarah-dev',
+    author_name: 'Sarah Chen',
+    author_email: 'sarah@example.com',
+    committed_at: '2026-03-25T08:10:00Z',
+    parent_sha: 'b7a6c5d4e3f2b7a6c5d4e3f2b7a6c5d4e3f2b7a6',
+    created_at: '2026-03-25T08:12:00Z',
+  },
+  {
+    id: '88888888-8888-8888-8888-888888888882',
+    repository_id: '11111111-1111-1111-1111-111111111111',
+    sha: 'b7a6c5d4e3f2b7a6c5d4e3f2b7a6c5d4e3f2b7a6',
+    message: 'refactor: wire up Stripe checkout session completed listener',
+    author_login: 'sarah-dev',
+    author_name: 'Sarah Chen',
+    author_email: 'sarah@example.com',
+    committed_at: '2026-03-24T18:00:00Z',
+    parent_sha: '99e8d7c6b5a499e8d7c6b5a499e8d7c6b5a499e8',
+    created_at: '2026-03-24T18:05:00Z',
+  },
+];
+
+export const fallbackCommitAnalysis: CommitAnalysisRead = {
+  id: '99999999-9999-9999-9999-999999999991',
+  commit_id: '88888888-8888-8888-8888-888888888881',
+  status: 'COMPLETED',
+  overall_status: 'NEEDS_REVIEW',
+  summary: 'Commit implements 3DS signature validation but lacks exception handling tests.',
+  implementation_notes: 'Webhook parsing logic aligns with Stripe API v2024 spec.',
+  testing_notes: 'Unit tests cover positive signature validation; missing test for expired timestamp attack.',
+  error_handling_notes: 'Exceptions in signature verification propagate uncaught.',
+  documentation_notes: 'Function docstrings updated with expected webhook headers.',
+  placeholder_notes: 'No TODO or placeholder markers found in source code.',
+  signals: {
+    has_tests: true,
+    has_docs: true,
+    has_error_handling_gaps: true,
+    complexity_score: 'MODERATE',
+  },
+  started_at: '2026-03-25T08:15:00Z',
+  completed_at: '2026-03-25T08:15:12Z',
+  created_at: '2026-03-25T08:15:00Z',
+};
+
+export const fallbackQueueItems: ReviewQueueItem[] = [
+  {
+    pull_request: fallbackPullRequests[0],
+    latest_analysis_id: '77777777-7777-7777-7777-777777777777',
+    latest_analysis_status: 'COMPLETED',
+    latest_review_id: '66666666-6666-6666-6666-666666666666',
+    latest_review_status: 'READY',
+    queued_at: '2026-03-25T13:00:00Z',
+  },
+  {
+    pull_request: fallbackPullRequests[1],
+    latest_analysis_id: null,
+    latest_analysis_status: null,
+    latest_review_id: null,
+    latest_review_status: null,
+    queued_at: '2026-03-25T11:00:00Z',
+  },
+];

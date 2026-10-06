@@ -34,19 +34,19 @@ class GitHubAuthManager:
 
     @property
     def app_id(self) -> str:
-        return self._app_id or settings.GITHUB_APP_ID
+        return self._app_id if self._app_id is not None else settings.GITHUB_APP_ID
 
     @property
     def private_key(self) -> str:
-        return self._private_key or settings.GITHUB_PRIVATE_KEY
+        return self._private_key if self._private_key is not None else settings.GITHUB_PRIVATE_KEY
 
     @property
     def private_key_path(self) -> str:
-        return self._private_key_path or settings.GITHUB_PRIVATE_KEY_PATH
+        return self._private_key_path if self._private_key_path is not None else settings.GITHUB_PRIVATE_KEY_PATH
 
     @property
     def api_base_url(self) -> str:
-        return self._api_base_url or settings.GITHUB_API_BASE_URL or "https://api.github.com"
+        return self._api_base_url if self._api_base_url is not None else (settings.GITHUB_API_BASE_URL or "https://api.github.com")
 
     def _get_pem_private_key(self) -> str:
         key = self.private_key

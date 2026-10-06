@@ -1,0 +1,10 @@
+{
+  "description": "AI-powered DevSecOps workspace that helps developers connect GitHub repos, analyze code, detect security issues, and manage secure reviews before production.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
