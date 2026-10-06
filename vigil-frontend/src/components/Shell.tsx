@@ -3,8 +3,9 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import Nav from './Nav';
 import FloatingAssistant from './FloatingAssistant';
+import TopBar from './TopBar';
 
-const NAV_EXPANDED = 216;
+const NAV_EXPANDED = 248;
 const NAV_COLLAPSED = 56;
 
 export default function Shell() {
@@ -70,6 +71,7 @@ export default function Shell() {
           background: 'var(--background)',
         }}
       >
+        <TopBar />
         <Outlet />
       </main>
 

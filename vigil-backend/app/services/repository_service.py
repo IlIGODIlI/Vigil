@@ -134,6 +134,8 @@ class RepositoryService:
             repo.private = private
             repo.html_url = html_url
             repo.is_active = True
+            if repo_data.get("installation_id") is not None:
+                repo.installation_id = int(repo_data["installation_id"])
             repo.updated_at = now
         else:
             user = cls._get_or_create_user(db, owner_login=owner_login, owner_id=owner_id)
@@ -141,6 +143,7 @@ class RepositoryService:
                 id=uuid.uuid4(),
                 user_id=user.id,
                 github_repo_id=github_repo_id,
+                installation_id=(int(repo_data["installation_id"]) if repo_data.get("installation_id") is not None else None),
                 owner_login=owner_login,
                 name=name,
                 full_name=full_name,

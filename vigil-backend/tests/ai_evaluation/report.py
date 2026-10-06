@@ -8,8 +8,8 @@ from tests.ai_evaluation.runner import get_comparison_table
 def generate_benchmark_report(
     baseline_a: BenchmarkMetrics,
     vigil_metrics: BenchmarkMetrics,
-    model_name: str = "gemini-3.8-flash",
-    provider: str = "OpenAICompatibleProvider (Google Gemini via generativelanguage.googleapis.com)",
+    model_name: str = "configured-model",
+    provider: str = "GroqProvider (OpenAI-compatible API)",
 ) -> str:
     """Generates the durable, reproducible Phase 4 AI Review Quality Markdown Evaluation Report."""
     table = get_comparison_table(baseline_a, vigil_metrics)
