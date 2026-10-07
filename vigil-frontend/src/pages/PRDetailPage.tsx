@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import {
   ChevronLeft, Cpu, Shield, GitCommit, FileText, Send,
   RotateCcw, CheckCircle, AlertTriangle, Loader2, Clock, ShieldAlert, Zap
@@ -24,8 +24,9 @@ import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { Card, CardContent } from '../components/common/Card';
 import { cn } from '../lib/utils';
+import { SecurityAssumptionPanel } from '../components/securityAssumptions/SecurityAssumptionPanel';
 
-type TabId = 'findings' | 'files' | 'commits' | 'review';
+type TabId = 'findings' | 'files' | 'commits' | 'review' | 'assumptions';
 
 type AnalysisPhase = 'idle' | 'triggering' | 'polling' | 'completed' | 'failed';
 
@@ -60,6 +61,9 @@ function getAnalysisPhaseBadge(phase: AnalysisPhase, analysis: AnalysisRead | nu
 
 export const PRDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const routeEvidenceAnalysisId = (location.state as { evidenceAnalysisId?: unknown } | null)?.evidenceAnalysisId;
+  const evidenceAnalysisId = typeof routeEvidenceAnalysisId === 'string' ? routeEvidenceAnalysisId : null;
 
   // Core data
   const [pr, setPr] = useState<PullRequestRead | null>(null);
@@ -87,7 +91,7 @@ export const PRDetailPage: React.FC = () => {
   const pollingRef = useRef(false);
 
   // UI
-  const [activeTab, setActiveTab] = useState<TabId>('findings');
+  const [activeTab, setActiveTab] = useState<TabId>(() => evidenceAnalysisId ? 'assumptions' : 'findings');
   const [showPublishModal, setShowPublishModal] = useState(false);
 
   // Load findings, review after analysis or on mount
@@ -234,6 +238,7 @@ if (finalStatus === 'COMPLETED') {
     { id: 'files', label: 'Changed Files', icon: <FileText className="w-3.5 h-3.5" /> },
     { id: 'commits', label: 'Commits', icon: <GitCommit className="w-3.5 h-3.5" /> },
     { id: 'review', label: 'Review Actions', icon: <FileText className="w-3.5 h-3.5" /> },
+    { id: 'assumptions', label: 'Security Assumptions', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
   ];
 
   const isAnalyzing = analysisPhase === 'triggering' || analysisPhase === 'polling';
@@ -515,6 +520,16 @@ if (finalStatus === 'COMPLETED') {
               </>
             )}
           </div>
+        )}
+
+        {activeTab === 'assumptions' && (
+          evidenceAnalysisId || currentAnalysis
+            ? <SecurityAssumptionPanel analysisId={evidenceAnalysisId || currentAnalysis!.id} />
+            : <EmptyState
+                icon={<ShieldAlert className="w-6 h-6" />}
+                title="Run an analysis first"
+                description="Security assumptions are extracted and compared as part of a PR analysis. No analysis-scoped assumption data is available yet."
+              />
         )}
 
         {/* Review Preview tab */}

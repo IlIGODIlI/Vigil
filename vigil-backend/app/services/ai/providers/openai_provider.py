@@ -13,6 +13,7 @@ from app.services.ai.exceptions import (
     AIProviderError,
     AIRateLimitError,
     AIResponseError,
+    AIModelUnavailableError,
     AITimeoutError,
 )
 from app.services.ai.providers.base import BaseAIProvider
@@ -22,13 +23,10 @@ from app.services.ai.schemas import AICompletionRequest, AICompletionResponse, A
 class OpenAICompatibleProvider(BaseAIProvider):
     """Asynchronous provider for OpenAI-compatible model endpoints.
 
-    Supports Google Gemini (via https://generativelanguage.googleapis.com/v1beta/openai/),
-    OpenAI, vLLM, Hugging Face Inference Endpoints, and any other provider that implements
-    the OpenAI Chat Completions wire protocol.
+    Supports Groq's OpenAI-compatible endpoint and compatible providers while
+    keeping HTTP/model details behind the provider boundary.
 
-    Note on Gemini 3.x: The ``temperature`` parameter is accepted in the request payload
-    but silently ignored by Gemini 3.x models (which use fixed internal sampling).
-    It remains in the schema for forward-compatibility with other providers.
+    The gateway keeps provider-specific HTTP handling behind this adapter.
     """
 
     def __init__(
@@ -90,19 +88,19 @@ class OpenAICompatibleProvider(BaseAIProvider):
             "model": model_name,
             "messages": messages,
         }
-        # NOTE: temperature is intentionally omitted. Gemini 3.x models do not
-        # support custom sampling parameters (temperature, top_p, top_k) via the
-        # OpenAI-compatible endpoint and will reject requests that include them.
-        # max_tokens is retained — Gemini accepts it (maps to maxOutputTokens).
+        if request.temperature is not None:
+            payload["temperature"] = request.temperature
         if request.max_tokens is not None:
             payload["max_tokens"] = request.max_tokens
+        if request.response_format is not None:
+            payload["response_format"] = request.response_format
 
         last_transient_error: Optional[Exception] = None
 
         for attempt in range(self.max_retries + 1):
             try:
                 response = await client.chat.completions.create(**payload)
-                return self._parse_response(response, model_name)
+                return self._parse_response(response, model_name).model_copy(update={"retry_count": attempt})
 
             except (openai.AuthenticationError, openai.PermissionDeniedError) as exc:
                 # Authentication failures must not be retried
@@ -112,6 +110,9 @@ class OpenAICompatibleProvider(BaseAIProvider):
             except openai.BadRequestError as exc:
                 # Bad requests (malformed payload/parameters) must not be retried
                 logger.error("AI provider bad request error")
+                message = (getattr(exc, "message", "") or "").casefold()
+                if "model" in message and any(term in message for term in ("not found", "unavailable", "access", "decommission")):
+                    raise AIModelUnavailableError("Configured AI model is unavailable.") from exc
                 raise AIProviderError(f"AI provider rejected request: {exc.message}") from exc
 
             except openai.RateLimitError as exc:
@@ -121,6 +122,7 @@ class OpenAICompatibleProvider(BaseAIProvider):
                     logger.warning(f"AI provider rate limited (attempt {attempt + 1}/{self.max_retries + 1}), retrying in {backoff:.2f}s...")
                     await asyncio.sleep(backoff)
                     continue
+                last_transient_error.retry_count = attempt
                 raise last_transient_error from exc
 
             except openai.APITimeoutError as exc:
@@ -130,6 +132,7 @@ class OpenAICompatibleProvider(BaseAIProvider):
                     logger.warning(f"AI provider timed out (attempt {attempt + 1}/{self.max_retries + 1}), retrying in {backoff:.2f}s...")
                     await asyncio.sleep(backoff)
                     continue
+                last_transient_error.retry_count = attempt
                 raise last_transient_error from exc
 
             except (openai.APIConnectionError, openai.InternalServerError) as exc:
@@ -139,6 +142,7 @@ class OpenAICompatibleProvider(BaseAIProvider):
                     logger.warning(f"AI provider server/network error (attempt {attempt + 1}/{self.max_retries + 1}), retrying in {backoff:.2f}s...")
                     await asyncio.sleep(backoff)
                     continue
+                last_transient_error.retry_count = attempt
                 raise last_transient_error from exc
 
             except openai.APIError as exc:
@@ -184,4 +188,5 @@ class OpenAICompatibleProvider(BaseAIProvider):
             model=response_model,
             usage=usage_info,
             finish_reason=finish_reason,
+            provider="groq",
         )

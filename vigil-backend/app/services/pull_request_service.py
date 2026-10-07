@@ -60,6 +60,14 @@ class PullRequestService:
         if not pr:
             raise ResourceNotFoundException(f"Pull request with ID '{pull_request_id}' not found")
 
+        existing = db.scalar(select(Analysis).where(
+            Analysis.pull_request_id == pr.id,
+            Analysis.head_sha == pr.head_sha,
+            Analysis.status.in_([AnalysisStatus.QUEUED.value, AnalysisStatus.RUNNING.value, AnalysisStatus.COMPLETED.value]),
+        ).order_by(Analysis.created_at.desc()))
+        if existing:
+            return AnalysisRead.model_validate(existing)
+
         analysis = Analysis(
             pull_request_id=pr.id,
             head_sha=pr.head_sha,

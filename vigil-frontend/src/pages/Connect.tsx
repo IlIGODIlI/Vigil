@@ -123,7 +123,7 @@ export default function Connect() {
                   }}>
                     {done
                       ? <CheckCircle size={12} color="#000" />
-                      : <span style={{ fontSize: '0.7rem', color: '#fff', fontWeight: '600' }}>{i + 1}</span>
+                      : <span style={{ fontSize: '0.7rem', color: 'var(--primary-foreground)', fontWeight: '600' }}>{i + 1}</span>
                     }
                   </div>
                   <span style={{ fontSize: '0.8rem', color: active ? 'var(--foreground)' : 'var(--muted-foreground)' }}>{s}</span>
@@ -179,7 +179,7 @@ export default function Connect() {
               disabled={connecting}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                padding: '13px', background: '#24292e', color: '#fff',
+                padding: '13px', background: 'var(--card)', color: 'var(--foreground)',
                 border: 'none', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '500',
                 cursor: connecting ? 'not-allowed' : 'pointer',
               }}
@@ -272,7 +272,7 @@ export default function Connect() {
               disabled={selected.size === 0 || syncing}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                padding: '13px', background: 'var(--primary)', color: '#fff',
+                padding: '13px', background: 'var(--primary)', color: 'var(--primary-foreground)',
                 border: 'none', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '500',
                 cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
                 opacity: selected.size === 0 ? 0.5 : 1,
